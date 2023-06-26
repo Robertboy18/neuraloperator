@@ -52,11 +52,19 @@ default: &DEFAULT
     weight_decay: 1e-4
     amp_autocast: False
 
-    scheduler_T_max: 500 # For cosine only, typically take n_epochs
-    scheduler_patience: 5 # For ReduceLROnPlateau only
-    scheduler: 'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
+    #scheduler_T_max: 500 # For cosine only, typically take n_epochs
+    #scheduler_patience: 5 # For ReduceLROnPlateau only
+    scheduler: 'CyclicLR' #'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
     step_size: 100
     gamma: 0.5
+    base_lr: 1e-3
+    max_lr: 1e-2
+    cycle_momentum: False
+    mode: "triangular2"
+    last_epoch: -1
+    step_size_up: 6000 # 120 * 100 //2 
+    step_size_down: 6000
+    gamma: 1.0
 
   # Dataset related
   data:

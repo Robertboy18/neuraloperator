@@ -14,7 +14,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 # Read the configuration
 config_name = 'default'
-pipe = ConfigPipeline([YamlConfig('./default_config.yaml', config_name='default', config_folder='../config'),
+pipe = ConfigPipeline([YamlConfig('./incremental.yaml', config_name='default', config_folder='../config'),
                        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
                        YamlConfig(config_folder='../config')
                       ])
@@ -31,9 +31,7 @@ if config.wandb.log and is_logger:
         wandb_name = config.wandb.name
     else:
         wandb_name = '_'.join(
-            f'{var}' for var in [config_name, config.tfno2d.n_layers, config.tfno2d.modes_width, config.tfno2d.modes_height,
-                                 config.tfno2d.hidden_channels, config.tfno2d.factorization, config.tfno2d.rank, 
-                                 config.patching.levels, config.patching.padding])
+            f'{var}' for var in [config_name, config.fno.n_modes, config.fno.hidden_channels, config.fno.projection_channels, config.fno.incremental_n_modes])
     wandb.init(config=config, name=wandb_name,
                project=config.wandb.project, entity=config.wandb.entity)
     if config.wandb.sweep:
@@ -97,6 +95,8 @@ elif config.opt.scheduler == 'StepLR':
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 
                                                 step_size=config.opt.step_size,
                                                 gamma=config.opt.gamma)
+elif config.opt.scheduler == 'CyclicLR':
+    scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer,step_size_down=config.opt.step_size_down,base_lr=config.opt.base_lr,max_lr=config.opt.max_lr,step_size_up=config.opt.step_size_up,mode=config.opt.mode,last_epoch=-1,cycle_momentum=False)
 else:
     raise ValueError(f'Got {config.opt.scheduler=}')
 

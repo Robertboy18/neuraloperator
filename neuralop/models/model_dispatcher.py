@@ -2,7 +2,6 @@ from .tfno import TFNO, TFNO1d, TFNO2d, TFNO3d
 from .tfno import FNO, FNO1d, FNO2d, FNO3d
 import inspect
 
-
 MODEL_ZOO = {
     'tfno'   : TFNO,
     'tfno1d' : TFNO1d,
@@ -86,5 +85,7 @@ def dispatch_model(ModelClass, config):
         if (value.default is not inspect._empty) and (key not in config):
             print(f"Keyword argument {key} not specified for model {model_name}, using default={value.default}.")
             # warnings.warn(f"Keyword argument {key} not specified for model {model_name}, using default={value.default}.")
-
+    if type(config['n_modes']) == str and type(config['incremental_n_modes']) == str:
+        config['n_modes'] = eval(config['n_modes'])
+        config['incremental_n_modes'] = eval(config['incremental_n_modes'])
     return ModelClass(**config)

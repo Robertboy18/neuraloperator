@@ -192,7 +192,7 @@ class Trainer:
                     print(msg)
                     sys.stdout.flush()
                     
-                if self.incremental:
+                if self.incremental and epoch % self.log_test_interval == 0:
                     print("Model is currently using {} number of modes".format(model.convs.incremental_n_modes))
 
                 # Wandb loging
@@ -200,6 +200,7 @@ class Trainer:
                     for pg in optimizer.param_groups:
                         lr = pg['lr']
                         values_to_log['lr'] = lr
+                        values_to_log['mode_evolution'] = model.convs.incremental_n_modes
                     wandb.log(values_to_log, step=epoch, commit=True)
 
     def evaluate(self, model, loss_dict, data_loader, output_encoder=None,
