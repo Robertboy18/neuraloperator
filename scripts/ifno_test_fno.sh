@@ -20,7 +20,7 @@ do
                 sh /ngc_workspace/jiawei/set_wandb.sh; \
                 cd /workspace; \
                 git clone https://github.com/Robertboy18/neuraloperator.git; \
-                cd /workspace/neuraloperator/neuralop/models/tests; \
+                cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
                 mpiexec --allow-run-as-root -n 8 python train_navier_stokes.py \
