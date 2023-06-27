@@ -23,10 +23,7 @@ do
                 cd /workspace/neuraloperator/neuralop/models/tests; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python test_darcy_baseline.py; \
-                python test_darcy_incremental.py; \
-                python test_darcy_incremental_loss_gap.py; \
-                python test_darcy_incremental_resolution.py ; \
+                mpiexec --allow-run-as-root -n 8 python train_navier_stokes.py \
             '"
     done
 done
