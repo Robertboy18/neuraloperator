@@ -168,7 +168,7 @@ def load_navier_stokes_pt(data_path, train_resolution,
     x_train = data['x'][0:n_train, :, :].unsqueeze(channel_dim).clone()
     y_train = data['y'][0:n_train, :, :].unsqueeze(channel_dim).clone()
     del data
-
+    
     idx = test_resolutions.index(train_resolution)
     test_resolutions.pop(idx)
     n_test = n_tests.pop(idx)
