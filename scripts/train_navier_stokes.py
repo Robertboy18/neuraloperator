@@ -131,7 +131,9 @@ trainer = Trainer(model, n_epochs=config.opt.n_epochs,
                   log_test_interval=config.wandb.log_test_interval,
                   log_output=config.wandb.log_output,
                   use_distributed=config.distributed.use_distributed,
-                  verbose=config.verbose, incremental = True)
+                  verbose=config.verbose, incremental = config.incremental.incremental_grad.use, 
+                  incremental_loss_gap=config.incremental.incremental_loss_gap.use, 
+                  incremental_resolution=config.incremental.incremental_resolution.use)
 
 
 trainer.train(train_loader, test_loaders,
