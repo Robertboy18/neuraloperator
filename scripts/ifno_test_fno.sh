@@ -9,7 +9,7 @@ do
             --priority NORMAL \
             --preempt RUNONCE \
             --ace nv-us-west-2 \
-            --instance dgx1v.32g.4.norm \
+            --instance dgx1v.16g.1.norm \
             --image nvcr.io/nvidian/nvr-aialgo/fly-incremental:zoo_latest \
             --result /results \
             --workspace 6Ubcqvn_Rn6uKFJw4ijJdw:/ngc_workspace \
@@ -19,7 +19,8 @@ do
             --port 6006 --port 1234 --port 8888 \
             --commandline "bash -c '\
                 sh /ngc_workspace/jiawei/set_wandb.sh; \
-                pip install configmypy,tensorly,zarr,mpi4py; \
+                pip install configmypy zarr mpi4py; \
+                pip install -U tensorly; \
                 pip install -U tensorly-torch ; \
                 cd /workspace; \
                 git clone https://github.com/Robertboy18/neuraloperator.git; \
