@@ -14,16 +14,21 @@ do
             --result /results \
             --workspace 6Ubcqvn_Rn6uKFJw4ijJdw:/ngc_workspace \
             --datasetid 23145:/dataset \
+            --datasetid 110516:/high_res_ns_dataset \
             --team nvr-aialgo \
             --port 6006 --port 1234 --port 8888 \
             --commandline "bash -c '\
                 sh /ngc_workspace/jiawei/set_wandb.sh; \
+                pip install configmypy,tensorly,zarr,mpi4py; \
+                pip install -U tensorly-torch ; \
                 cd /workspace; \
                 git clone https://github.com/Robertboy18/neuraloperator.git; \
+                cd /workspace/neuraloperator; \
+                pip install -e . ; \
+                cp /ngc_workspace/jiawei/wandb_api_key.txt config/wandb_api_key.txt; \
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
-                cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                mpiexec --allow-run-as-root -n 8 python train_navier_stokes.py \
+                python train_navier_stokes.py ;\
             '"
     done
 done

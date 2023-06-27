@@ -20,13 +20,13 @@ default: &DEFAULT
     incremental_n_modes: (2, 2)
   
   data:
-    folder: /home/robert/data/navierstokes_new/
-    batch_size: 3
+    folder: /high_res_ns_dataset
+    batch_size: 16
     n_train: 1000
     train_resolution: 512
     n_tests: [200]
     test_resolutions: [512] #, 1024] 
-    test_batch_sizes: [3] #, 1]
+    test_batch_sizes: [16] #, 1]
     positional_encoding: True
 
     encode_input: True
