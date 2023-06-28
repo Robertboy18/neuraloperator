@@ -31,7 +31,7 @@ class Paramaters:
                     config_file=None)])
         config = pipe.read_conf()
         paramaters = config.incremental
-
+                
         if self.incremental_grad:
             # incremental gradient
             paramaters_grad = paramaters.incremental_grad
@@ -126,9 +126,9 @@ class Paramaters:
     def index_to_sub_from_table(self, index):
         # Get the sub value from the sub_list based on the index
         if index >= len(self.sub_list):
-            return self.sub_list[-1]
+            return int(self.sub_list[-1])
         else:
-            return self.sub_list[index]
+            return int(self.sub_list[index])
 
     def compute_rank(self, tensor):
         # Compute the matrix rank of a tensor

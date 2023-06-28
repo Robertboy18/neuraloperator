@@ -133,7 +133,7 @@ trainer = Trainer(model, n_epochs=config.opt.n_epochs,
                   use_distributed=config.distributed.use_distributed,
                   verbose=config.verbose, incremental = config.incremental.incremental_grad.use, 
                   incremental_loss_gap=config.incremental.incremental_loss_gap.use, 
-                  incremental_resolution=config.incremental.incremental_resolution.use)
+                  incremental_resolution=config.incremental.incremental_resolution.use, dataset_name="NavierStokes")
 
 
 trainer.train(train_loader, test_loaders,
