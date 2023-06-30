@@ -428,9 +428,9 @@ done
 ########### Singular resolution ############
 TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_only
 
-for BASE_LR in 1e-4, 1e-3
+for BASE_LR in 1e-4 1e-3
 do
-    for MAX_LR in 1e-3, 1e-2
+    for MAX_LR in 1e-3 1e-2
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
@@ -463,9 +463,9 @@ do
     done
 done
 
-for BASE_LR in 1e-4, 1e-3
+for BASE_LR in 1e-4 1e-3
 do
-    for MAX_LR in 1e-3, 1e-2
+    for MAX_LR in 1e-3 1e-2
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
@@ -530,7 +530,7 @@ do
                     cd /workspace/neuraloperator/scripts; \
                     git checkout robert-test-incremental; \
                     cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                    python train_navier_stokes.py --opt.mode="exp" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --opt.gamma=$GAMMA --incremental.incremental_resolution.use = True;\
+                    python train_navier_stokes.py --opt.mode="exp" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --opt.gamma=$GAMMA --incremental.incremental_resolution.use=True;\
                 '"
         done
     done
@@ -574,6 +574,7 @@ do
     done
 done
 
+## RUNS
 TASK_NAME=ifno_batch_script_test_fno_loss_gap
 for LR in 1e-3
 do
@@ -609,7 +610,7 @@ do
             '"
     done
 done
-
+## RUNS
 
 ########## Standard STEPLR #############
 
