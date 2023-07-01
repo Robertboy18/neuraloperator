@@ -23,7 +23,7 @@ do
                 pip install -U tensorly-torch ; \
                 cd /workspace; \
                 git clone https://github.com/Robertboy18/neuraloperator.git; \
-                cd /workspace/neuraloperator; \
+                cd /workspace/neuraloperator; 
                 pip install -e . ; \
                 cp /ngc_workspace/jiawei/wandb_api_key.txt config/wandb_api_key.txt; \
                 cd /workspace/neuraloperator/scripts; \

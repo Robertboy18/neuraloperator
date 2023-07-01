@@ -100,7 +100,7 @@ class Paramaters:
         # Calculate resolution based on sub for the Darcy dataset
         return int(((241 - 1) / sub) + 1)
 
-    def navier_sub_to_res(self, sub, resolution=1024):
+    def navier_sub_to_res(self, sub, resolution=512):
         # Calculate resolution based on sub for the NavierStokes dataset
         # Assumes one is using the default high resolution dataset
         return resolution // sub

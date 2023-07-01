@@ -22,9 +22,9 @@ default: &DEFAULT
   data:
     folder: /home/robert/data/navierstokes_new/
     batch_size: 16
-    n_train: 12
+    n_train: 1
     train_resolution: 1024
-    n_tests: [200]
+    n_tests: [1]
     test_resolutions: [1024] #, 1024] 
     test_batch_sizes: [16] #, 1]
     positional_encoding: True
@@ -37,7 +37,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 500
+    n_epochs: 10
     learning_rate: 1e-3
     training_loss: 'h1'
     weight_decay: 1e-4
