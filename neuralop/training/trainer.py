@@ -243,8 +243,8 @@ class Trainer:
                 y = y.to(self.device)
                 x = x.to(self.device)
                 
-                if self.incremental_resolution:
-                    x,y = self.incremental_scheduler.regularize_input_res(x,y)
+                #if self.incremental_resolution:
+                #    x, y = self.incremental_scheduler.regularize_input_res(x,y)
                 
                 out = model(x)
         
