@@ -17,7 +17,7 @@ default: &DEFAULT
     n_modes: (32, 32)
     hidden_channels: 32
     projection_channels: 64
-    incremental_n_modes: (2, 2)
+    incremental_n_modes: (32, 32)
   
   data:
     folder: /high_res_ns_dataset
@@ -89,7 +89,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: navierstokes-incremental # If None, config will be used but you can override it here
+    name: navierstokes-baselines # If None, config will be used but you can override it here
     group: '' 
     project: "navierstokes-high-resolution"
     entity: "research-pino_ifno" # put your username here
