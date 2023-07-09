@@ -3,7 +3,7 @@ TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_only
 
 for BASE_LR in 1e-4 1e-3
 do
-    for MAX_LR in 1e-3 1e-2
+    for MAX_LR in 1e-2
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
@@ -40,7 +40,7 @@ for BASE_LR in 1e-3
 do
     for MAX_LR in 1e-2
     do
-        for GAMMA in 0.5 0.9 1
+        for GAMMA in 0.5 0.9
         do
             ngc batch run \
                 --name "ml-model.$TASK_NAME" \
