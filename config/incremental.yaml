@@ -17,7 +17,7 @@ default: &DEFAULT
     n_modes: (64, 64)
     hidden_channels: 64
     projection_channels: 64
-    incremental_n_modes: (2, 2)
+    incremental_n_modes: (64, 64)
   
   data:
     folder: /high_res_ns_dataset
@@ -83,13 +83,13 @@ default: &DEFAULT
       SmallDarcy: [1]
       Darcy: [8, 4, 2, 1]
       Burgers: [256, 64, 16, 8, 1]
-      NavierStokes: [16, 8, 4, 2, 1]
+      NavierStokes: [8, 4, 2, 1]
       Vorticity: [128, 64, 32, 16, 1]
 
   # Weights and biases
   wandb:
     log: True
-    name: navierstokes-incremental # If None, config will be used but you can override it here
+    name: navierstokes-baseline # If None, config will be used but you can override it here
     group: '' 
     project: "navierstokes-high-resolution"
     entity: "research-pino_ifno" # put your username here
