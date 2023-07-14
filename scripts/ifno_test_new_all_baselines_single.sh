@@ -31,7 +31,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.mode="triangular" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True;\
+                python train_navier_stokes.py --opt.mode="triangular" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=4;\
             '"
     done
 done
@@ -66,7 +66,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.mode="triangular2" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True;\
+                python train_navier_stokes.py --opt.mode="triangular2" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=4;\
             '"
     done
 done
@@ -103,7 +103,7 @@ do
                     cd /workspace/neuraloperator/scripts; \
                     git checkout robert-test-incremental; \
                     cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                    python train_navier_stokes.py --opt.mode="exp_range" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --opt.gamma=$GAMMA --incremental.incremental_resolution.use=True;\
+                    python train_navier_stokes.py --opt.mode="exp_range" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --opt.gamma=$GAMMA --incremental.incremental_resolution.use=True & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=4;\
                 '"
         done
     done
@@ -144,7 +144,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$LR --incremental.incremental_resolution.use=True;\
+                python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$LR --incremental.incremental_resolution.use=True & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=4;\
             '"
     done
 done
