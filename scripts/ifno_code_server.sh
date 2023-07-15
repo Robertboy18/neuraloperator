@@ -2,13 +2,11 @@
 
 ngc batch run \
   --name "ml-model.fly-incremental-debug" \
-  --label '_wl___nlp' \
-  --priority NORMAL \
   --preempt RUNONCE \
   --min-timeslice 0s \
   --total-runtime 160h \
   --ace nv-us-west-2 \
-  --instance dgx1v.16g.1.norm \
+  --instance dgx1v.32g.1.norm \
   --image nvcr.io/nvidian/nvr-aialgo/fly-incremental:zoo_latest \
   --result /results \
   --workspace 6Ubcqvn_Rn6uKFJw4ijJdw:/ngc_workspace \

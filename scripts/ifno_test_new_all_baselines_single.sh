@@ -1,5 +1,5 @@
              ########### Singular resolution ############
-TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_only
+TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_only1
 
 for BASE_LR in 1e-4 1e-3
 do
@@ -7,7 +7,6 @@ do
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
-            --priority NORMAL \
             --preempt RUNONCE \
             --ace nv-us-west-2 \
             --instance dgx1v.16g.1.norm \
@@ -31,10 +30,12 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.mode="triangular" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=4;\
+                python train_navier_stokes.py --opt.mode="triangular" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True;\
             '"
     done
 done
+# & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=8
+TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_only2
 
 for BASE_LR in 1e-4 1e-3
 do
@@ -42,7 +43,6 @@ do
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
-            --priority NORMAL \
             --preempt RUNONCE \
             --ace nv-us-west-2 \
             --instance dgx1v.16g.1.norm \
@@ -66,10 +66,12 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.mode="triangular2" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=4;\
+                python train_navier_stokes.py --opt.mode="triangular2" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True;\
             '"
     done
 done
+
+TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_only3
 
 for BASE_LR in 1e-3
 do
@@ -79,7 +81,6 @@ do
         do
             ngc batch run \
                 --name "ml-model.$TASK_NAME" \
-                --priority NORMAL \
                 --preempt RUNONCE \
                 --ace nv-us-west-2 \
                 --instance dgx1v.16g.1.norm \
@@ -103,7 +104,7 @@ do
                     cd /workspace/neuraloperator/scripts; \
                     git checkout robert-test-incremental; \
                     cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                    python train_navier_stokes.py --opt.mode="exp_range" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --opt.gamma=$GAMMA --incremental.incremental_resolution.use=True & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=4;\
+                    python train_navier_stokes.py --opt.mode="exp_range" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --opt.gamma=$GAMMA --incremental.incremental_resolution.use=True;\
                 '"
         done
     done
@@ -120,7 +121,6 @@ do
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
-            --priority NORMAL \
             --preempt RUNONCE \
             --ace nv-us-west-2 \
             --instance dgx1v.16g.1.norm \
@@ -144,7 +144,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$LR --incremental.incremental_resolution.use=True & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=4;\
+                python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$LR --incremental.incremental_resolution.use=True;\
             '"
     done
 done
