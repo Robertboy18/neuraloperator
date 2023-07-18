@@ -11,7 +11,7 @@ do
                 --name "ml-model.$TASK_NAME" \
                 --preempt RUNONCE \
                 --ace nv-us-west-2 \
-                --instance dgx1v.32g.2.norm \
+                --instance dgx1v.32g.1.norm \
                 --image nvcr.io/nvidian/nvr-aialgo/fly-incremental:zoo_latest \
                 --result /results \
                 --workspace 6Ubcqvn_Rn6uKFJw4ijJdw:/ngc_workspace \
@@ -32,7 +32,7 @@ do
                     cd /workspace/neuraloperator/scripts; \
                     git checkout robert-test-incremental; \
                     cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                    CUDA_VISIBLE_DEVICES=0,1 python train_navier_stokes.py --opt.mode="triangular" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True --incremental.incremental_grad.use=True --incremental.incremental_grad.grad_explained_ratio_threshold=$THRESHOLD --incremental.dataset.NavierStokes=1 & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=0.001 --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=8;\
+                    python train_navier_stokes.py --opt.mode="triangular" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --incremental.incremental_resolution.use=True --incremental.incremental_grad.use=True --incremental.incremental_grad.grad_explained_ratio_threshold=$THRESHOLD --incremental.dataset.NavierStokes=1 & python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=0.001 --incremental.incremental_resolution.use=True --incremental.dataset.NavierStokes=8 data.n_train=1000 data.n_test=100 data.batch_size=4 data.test_batch_sizes=4;\
                 '"
         done
     done
