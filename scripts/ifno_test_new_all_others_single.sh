@@ -5,7 +5,7 @@ for BASE_LR in 1e-5
 do
     for MAX_LR in 1e-4
     do
-        for THRESHOLD in 0.99 0.999 0.9999
+        for THRESHOLD in 0.99
         do
             ngc batch run \
                 --name "ml-model.$TASK_NAME" \
