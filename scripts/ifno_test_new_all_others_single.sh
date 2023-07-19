@@ -157,7 +157,7 @@ do
     done
 done
 
-TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_and_loss_gap4
+TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_and_loss_gap5
 
 for BASE_LR in 1e-5 1e-4
 do
@@ -196,7 +196,7 @@ do
     done
 done
 
-TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_and_loss_gap4
+TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_and_loss_gap6
 
 for BASE_LR in 1e-5 1e-4
 do
