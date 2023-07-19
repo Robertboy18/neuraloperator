@@ -128,7 +128,16 @@ class Paramaters:
         if index >= len(self.sub_list):
             return int(self.sub_list[-1])
         else:
-            return int(self.sub_list[index])
+            if index == 3 and self.current_logged_epoch > 480:
+                print("Now only running on the highest resolution")
+                return int(self.sub_list[3])
+            else:
+                if index != 3:
+                    print("Running as usual")
+                    return int(self.sub_list[index])
+                else:
+                    print("Running on 2nd lowest resolution")
+                    return int(self.sub_list[2])
 
     def compute_rank(self, tensor):
         # Compute the matrix rank of a tensor

@@ -77,7 +77,7 @@ default: &DEFAULT
 
     incremental_resolution:
       use: False
-      epoch_gap: 100
+      epoch_gap: 150
 
     dataset:
       SmallDarcy: [1]
