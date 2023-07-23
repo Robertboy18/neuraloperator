@@ -23,7 +23,7 @@ class Paramaters:
             [
                 YamlConfig(
                     # Add the config path to the incremental config file
-                    '../config/incremental.yaml',
+                    '../config/incremental-robert.yaml',
                     config_name='default'),
                 ArgparseConfig(
                     infer_types=True,
@@ -100,7 +100,7 @@ class Paramaters:
         # Calculate resolution based on sub for the Darcy dataset
         return int(((241 - 1) / sub) + 1)
 
-    def navier_sub_to_res(self, sub, resolution=512):
+    def navier_sub_to_res(self, sub, resolution=1024):
         # Calculate resolution based on sub for the NavierStokes dataset
         # Assumes one is using the default high resolution dataset
         return resolution // sub

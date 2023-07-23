@@ -1,6 +1,7 @@
 import torch
 from timeit import default_timer
 import wandb
+import os
 import sys 
 
 import neuralop.mpu.comm as comm
@@ -13,7 +14,7 @@ from .algo import Incremental
 class Trainer:
     def __init__(self, model, n_epochs, wandb_log=True, device=None,
                  mg_patching_levels=0, mg_patching_padding=0, mg_patching_stitching=True,
-                 log_test_interval=1, log_output=False, use_distributed=False, verbose=True, incremental = False, incremental_loss_gap = False, incremental_resolution = False, dataset_name = None):
+                 log_test_interval=1, log_output=False, use_distributed=False, verbose=True, incremental = False, incremental_loss_gap = False, incremental_resolution = False, dataset_name = None, save_interval=2, model_save_dir='./checkpoints'):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -53,7 +54,11 @@ class Trainer:
         self.incremental_resolution = incremental_resolution
         self.incremental = self.incremental_loss_gap or self.incremental_grad
         self.dataset_name = dataset_name
-
+        self.save_interval = save_interval
+        self.model_save_dir = model_save_dir
+        #create model save dir if not exist
+        os.makedirs(self.model_save_dir, exist_ok=True)
+        
         if mg_patching_levels > 0:
             self.mg_n_patches = 2**mg_patching_levels
             if verbose:
@@ -202,6 +207,13 @@ class Trainer:
                         values_to_log['lr'] = lr
                         values_to_log['mode_evolution'] = model.convs.incremental_n_modes
                     wandb.log(values_to_log, step=epoch, commit=True)
+        
+            #save model every save_interval epochs; contains model and checkpoint states 
+            if epoch % self.save_interval == 0:
+                self.save_model_checkpoint(epoch, model, optimizer)
+                if self.wandb_log and is_logger:
+                    save_path = os.path.join(self.model_save_dir, f'checkpoint_best.pt')
+                    wandb.save(save_path)
 
     def evaluate(self, model, loss_dict, data_loader, output_encoder=None,
                  log_prefix=''):
@@ -271,3 +283,44 @@ class Trainer:
         return errors
 
 
+    def save_model_checkpoint(self, epoch, model, optimizer):
+        """Saves a model checkpoint
+        
+        Parameters
+        ----------
+        epoch : int
+            epoch number
+        model : model to save
+        optimizer : optimizer to save
+        """
+        if epoch == -1:
+            save_path = os.path.join(self.model_save_dir, f'checkpoint_best.pt')
+        else:
+            save_path = os.path.join(self.model_save_dir, f'checkpoint_{epoch}.pt')
+
+        checkpoint = {
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+        }
+        torch.save(checkpoint, save_path)
+
+        return 
+
+    def load_model_checkpoint(self, epoch, model, optimizer):
+        """Loads a model checkpoint
+        
+        Parameters
+        ----------
+        epoch : int
+            epoch number
+        model : model to load
+        optimizer : optimizer to load
+        """
+        if epoch == -1:
+            load_path = os.path.join(self.model_save_dir, f'checkpoint_best.pt')
+        else:
+            load_path = os.path.join(self.model_save_dir, f'checkpoint_{epoch}.pt')
+        checkpoint = torch.load(load_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
