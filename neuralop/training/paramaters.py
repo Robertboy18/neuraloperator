@@ -50,6 +50,7 @@ class Paramaters:
             # incremental resolution
             paramaters_resolution = paramaters.incremental_resolution
             self.epoch_gap = paramaters_resolution.epoch_gap
+            self.new_index = config.checkpoint.sub_list_index
 
             # Determine the sub_list based on the dataset_name
             # Best to do powers of two as FFT is faster and FFTW++ library
@@ -66,7 +67,7 @@ class Paramaters:
                 self.sub_list = paramaters.dataset.Voriticity
 
             self.subsammpling_rate = 1
-            self.current_index = 0
+            self.current_index = self.new_index
             self.current_logged_epoch = 0
             self.current_sub = self.index_to_sub_from_table(self.current_index)
             self.current_res = self.sub_to_res(self.current_sub)
@@ -100,7 +101,7 @@ class Paramaters:
         # Calculate resolution based on sub for the Darcy dataset
         return int(((241 - 1) / sub) + 1)
 
-    def navier_sub_to_res(self, sub, resolution=1024):
+    def navier_sub_to_res(self, sub, resolution=512):
         # Calculate resolution based on sub for the NavierStokes dataset
         # Assumes one is using the default high resolution dataset
         return resolution // sub
@@ -118,6 +119,7 @@ class Paramaters:
             self.current_sub = self.index_to_sub_from_table(self.current_index)
             self.current_res = self.sub_to_res(self.current_sub)
             self.current_logged_epoch = epoch
+            self.new_index += 1
 
             print(f'Incre Res Update: change index to {self.current_index}')
             print(f'Incre Res Update: change sub to {self.current_sub}')
@@ -128,7 +130,7 @@ class Paramaters:
         if index >= len(self.sub_list):
             return int(self.sub_list[-1])
         else:
-            if index == 3 and self.current_logged_epoch > 480:
+            """if index == 3 and self.current_logged_epoch > 480:
                 print("Now only running on the highest resolution")
                 return int(self.sub_list[3])
             else:
@@ -136,8 +138,8 @@ class Paramaters:
                     print("Running as usual")
                     return int(self.sub_list[index])
                 else:
-                    print("Running on 2nd lowest resolution")
-                    return int(self.sub_list[2])
+                    print("Running on 2nd lowest resolution")"""
+            return int(self.sub_list[index])
 
     def compute_rank(self, tensor):
         # Compute the matrix rank of a tensor

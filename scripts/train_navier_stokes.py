@@ -134,12 +134,12 @@ trainer = Trainer(model, n_epochs=config.opt.n_epochs,
                   verbose=config.verbose, incremental = config.incremental.incremental_grad.use, 
                   incremental_loss_gap=config.incremental.incremental_loss_gap.use, 
                   incremental_resolution=config.incremental.incremental_resolution.use, dataset_name="NavierStokes", save_interval=config.checkpoint.interval, model_save_dir=config.checkpoint.directory)
-# load model from dict
-#model_load_epoch = 10
-#trainer.load_model_checkpoint(model_load_epoch, model, optimizer)
 
-                
-#msg = f'[{model_load_epoch}]'
+if config.checkpoint.save:
+    # load model from dict
+    model_load_epoch = config.checkpoint.last_epoch
+    trainer.load_model_checkpoint(model_load_epoch, model, optimizer)
+    msg = f'[{model_load_epoch}]'
 
 trainer.train(train_loader, test_loaders,
               output_encoder,

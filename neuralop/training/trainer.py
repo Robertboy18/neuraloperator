@@ -303,6 +303,7 @@ class Trainer:
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
         }
+        print("Checkpoint", checkpoint)
         torch.save(checkpoint, save_path)
 
         return 

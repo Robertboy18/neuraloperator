@@ -20,7 +20,7 @@ default: &DEFAULT
     incremental_n_modes: (32, 32)
   
   data:
-    folder: /home/robert/data/navierstokes_new/
+    folder: /high_res_ns_dataset
     batch_size: 16
     n_train: 10
     train_resolution: 512
@@ -37,7 +37,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 20
+    n_epochs: 10
     learning_rate: 1e-3
     training_loss: 'h1'
     weight_decay: 1e-4
@@ -76,14 +76,14 @@ default: &DEFAULT
       eps: 0.01
 
     incremental_resolution:
-      use: False
+      use: True
       epoch_gap: 100
 
     dataset:
       SmallDarcy: [1]
       Darcy: [8, 4, 2, 1]
       Burgers: [256, 64, 16, 8, 1]
-      NavierStokes: [1]
+      NavierStokes: [8, 4, 2, 1]
       Vorticity: [128, 64, 32, 16, 1]
 
   # Weights and biases
@@ -100,5 +100,8 @@ default: &DEFAULT
   n_params_baseline: None
 
   checkpoint:
-    directory: './checkpoints'
-    interval: 10
+    directory: '/ngc_workspace/jiawei/projects/neuraloperator/checkpoints'
+    interval: 5
+    save: False
+    last_epoch: 0
+    sub_list_index: 0
