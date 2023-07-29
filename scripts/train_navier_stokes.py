@@ -14,7 +14,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 # Read the configuration
 config_name = 'default'
-pipe = ConfigPipeline([YamlConfig('./incremental-robert.yaml', config_name='default', config_folder='../config'),
+pipe = ConfigPipeline([YamlConfig('./incremental.yaml', config_name='default', config_folder='../config'),
                        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
                        YamlConfig(config_folder='../config')
                       ])
@@ -133,12 +133,12 @@ trainer = Trainer(model, n_epochs=config.opt.n_epochs,
                   use_distributed=config.distributed.use_distributed,
                   verbose=config.verbose, incremental = config.incremental.incremental_grad.use, 
                   incremental_loss_gap=config.incremental.incremental_loss_gap.use, 
-                  incremental_resolution=config.incremental.incremental_resolution.use, dataset_name="NavierStokes", save_interval=config.checkpoint.interval, model_save_dir=config.checkpoint.directory)
+                  incremental_resolution=config.incremental.incremental_resolution.use, dataset_name="NavierStokes", save_interval=config.checkpoint.interval, model_save_dir=config.checkpoint.directory + config.checkpoint.name)
 
 if config.checkpoint.save:
     # load model from dict
     model_load_epoch = config.checkpoint.last_epoch
-    trainer.load_model_checkpoint(model_load_epoch, model, optimizer)
+    trainer.load_model_checkpoint(model_load_epoch, model, optimizer, config.checkpoint.sub_list_index)
     msg = f'[{model_load_epoch}]'
 
 trainer.train(train_loader, test_loaders,

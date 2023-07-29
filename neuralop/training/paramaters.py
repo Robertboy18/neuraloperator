@@ -23,7 +23,7 @@ class Paramaters:
             [
                 YamlConfig(
                     # Add the config path to the incremental config file
-                    '../config/incremental-robert.yaml',
+                    '../config/incremental.yaml',
                     config_name='default'),
                 ArgparseConfig(
                     infer_types=True,
@@ -179,4 +179,4 @@ class Paramaters:
         elif self.dataset_name == 'NavierStokesHighFrequency':
             x = x[:, ::self.current_sub, ::self.current_sub]
             y = y[:, ::self.current_sub, ::self.current_sub]
-        return x, y
+        return x, y, self.current_index

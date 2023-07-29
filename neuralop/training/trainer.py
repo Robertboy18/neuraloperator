@@ -73,7 +73,8 @@ class Trainer:
         
         if self.incremental or self.incremental_resolution:
             self.incremental_scheduler = Incremental(model, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution, dataset_name = self.dataset_name)
-        
+            self.index = 0
+
         self.mg_patching_padding = mg_patching_padding
         self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,
                                            use_distributed=use_distributed, stitching=mg_patching_stitching)
@@ -126,7 +127,7 @@ class Trainer:
                 y = y.to(self.device)
 
                 if self.incremental_resolution:
-                    x, y = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
+                    x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
                                 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
@@ -210,7 +211,7 @@ class Trainer:
         
             #save model every save_interval epochs; contains model and checkpoint states 
             if epoch % self.save_interval == 0:
-                self.save_model_checkpoint(epoch, model, optimizer)
+                self.save_model_checkpoint(epoch, model, optimizer, self.index)
                 if self.wandb_log and is_logger:
                     save_path = os.path.join(self.model_save_dir, f'checkpoint_best.pt')
                     wandb.save(save_path)
@@ -283,7 +284,7 @@ class Trainer:
         return errors
 
 
-    def save_model_checkpoint(self, epoch, model, optimizer):
+    def save_model_checkpoint(self, epoch, model, optimizer, index):
         """Saves a model checkpoint
         
         Parameters
@@ -296,19 +297,18 @@ class Trainer:
         if epoch == -1:
             save_path = os.path.join(self.model_save_dir, f'checkpoint_best.pt')
         else:
-            save_path = os.path.join(self.model_save_dir, f'checkpoint_{epoch}.pt')
+            save_path = os.path.join(self.model_save_dir, f'checkpoint_{epoch}_{index+1}.pt')
 
         checkpoint = {
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
         }
-        print("Checkpoint", checkpoint)
         torch.save(checkpoint, save_path)
 
         return 
 
-    def load_model_checkpoint(self, epoch, model, optimizer):
+    def load_model_checkpoint(self, epoch, model, optimizer, index):
         """Loads a model checkpoint
         
         Parameters
@@ -321,7 +321,7 @@ class Trainer:
         if epoch == -1:
             load_path = os.path.join(self.model_save_dir, f'checkpoint_best.pt')
         else:
-            load_path = os.path.join(self.model_save_dir, f'checkpoint_{epoch}.pt')
+            load_path = os.path.join(self.model_save_dir, f'checkpoint_{epoch}_{index}.pt')
         checkpoint = torch.load(load_path)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
