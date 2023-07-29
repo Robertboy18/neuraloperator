@@ -2,7 +2,7 @@ TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_and_loss_gap_tes
 
 for BASE_LR in 1e-5
 do
-    for MAX_LR in 5e-4
+    for MAX_LR in 5e-3
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
@@ -38,7 +38,7 @@ TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_and_loss_gap_tes
 
 for BASE_LR in 1e-5
 do
-    for MAX_LR in 5e-4
+    for MAX_LR in 5e-3
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
@@ -74,7 +74,7 @@ TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_and_loss_gap_tes
 
 for BASE_LR in 1e-5
 do
-    for MAX_LR in 5e-4
+    for MAX_LR in 5e-3
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
