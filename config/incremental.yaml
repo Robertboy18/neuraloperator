@@ -100,7 +100,7 @@ default: &DEFAULT
   n_params_baseline: None
   
   checkpoint:
-    directory: '/ngc_workspace/jiawei/projects/checkpoint_ns'
+    directory: '/ngc_workspace/jiawei/projects/checkpoint_ns/'
     name: 'checkpoints'
     interval: 100
     save: False
