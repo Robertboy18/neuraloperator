@@ -29,7 +29,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.mode="triangular2" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --checkpoint.name="checkpoints11";\
+                python train_navier_stokes.py --opt.mode="triangular2" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --checkpoint.name="checkpoints8";\
             '"
     done
 done
@@ -65,7 +65,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.mode="triangular" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --checkpoint.name="checkpoints12";\
+                python train_navier_stokes.py --opt.mode="triangular" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --checkpoint.name="checkpoints9";\
             '"
     done
 done
@@ -101,7 +101,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.mode="exp_range" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --checkpoint.name="checkpoints13";\
+                python train_navier_stokes.py --opt.mode="exp_range" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR --checkpoint.name="checkpoints10";\
             '"
     done
 done
