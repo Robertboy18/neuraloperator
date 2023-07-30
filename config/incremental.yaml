@@ -17,7 +17,7 @@ default: &DEFAULT
     n_modes: (64, 64)
     hidden_channels: 64
     projection_channels: 64
-    incremental_n_modes: (64, 64)
+    incremental_n_modes: (2, 2)
   
   data:
     folder: /high_res_ns_dataset
@@ -71,12 +71,12 @@ default: &DEFAULT
       grad_max_iter: 10
     
     incremental_loss_gap:
-      use: False
+      use: True
       init_modes: 1
-      eps: 0.01
+      eps: 0.001
 
     incremental_resolution:
-      use: False
+      use: True
       epoch_gap: 100
 
     dataset:
