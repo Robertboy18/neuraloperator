@@ -17,7 +17,7 @@ default: &DEFAULT
     n_modes: (64, 64)
     hidden_channels: 64
     projection_channels: 64
-    incremental_n_modes: (2, 2)
+    incremental_n_modes: (64, 64)
   
   data:
     folder: /high_res_ns_dataset
@@ -63,7 +63,7 @@ default: &DEFAULT
   # incremental paramaters
   incremental:
     incremental_grad:
-      use: True
+      use: False
       init_modes: 6
       buffer_modes: 5
       grad_explained_ratio_threshold: 0.999

@@ -1,5 +1,5 @@
 
-TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_and_loss_gap_test_modes5
+TASK_NAME=ifno_batch_script_test_fno_different_modes_resolution_and_loss_gap_test_modes6
 
 for BASE_LR in 1e-4
 do
@@ -30,7 +30,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$MAX_LR --incremental.incremental_resolution.use=True --checkpoint.name="checkpoints5";\
+                python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$MAX_LR --incremental.incremental_resolution.use=True --checkpoint.name="checkpoints6";\
             '"
     done
 done
