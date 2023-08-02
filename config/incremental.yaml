@@ -71,7 +71,7 @@ default: &DEFAULT
       grad_max_iter: 10
     
     incremental_loss_gap:
-      use: True
+      use: False
       init_modes: 1
       eps: 0.001
 
