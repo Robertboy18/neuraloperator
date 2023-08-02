@@ -51,8 +51,8 @@ default: &DEFAULT
     cycle_momentum: False
     mode: "triangular2"
     last_epoch: -1
-    step_size_up: 50 # 120 * 100 //2 
-    step_size_down: 50
+    step_size_up: 75 # 120 * 100 //2 
+    step_size_down: 75
 
   # Patching
   patching:
@@ -77,7 +77,7 @@ default: &DEFAULT
 
     incremental_resolution:
       use: False
-      epoch_gap: 100
+      epoch_gap: 150
 
     dataset:
       SmallDarcy: [1]
@@ -102,7 +102,7 @@ default: &DEFAULT
   checkpoint:
     directory: '/ngc_workspace/jiawei/projects/checkpoint_ns/'
     name: 'checkpoints'
-    interval: 100
+    interval: 150
     save: False
     last_epoch: 0
     sub_list_index: 0
