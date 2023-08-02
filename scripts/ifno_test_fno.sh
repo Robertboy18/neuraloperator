@@ -30,7 +30,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_navier_stokes.py --opt.scheduler="StepLR" --opt.learning_rate=$MAX_LR --checkpoint.name="checkpoints5";\
+                python train_navier_stokes.py --checkpoint.name="checkpoints5";\
             '"
     done
 done

@@ -22,9 +22,9 @@ default: &DEFAULT
   data:
     folder: /high_res_ns_dataset
     batch_size: 16
-    n_train: 10000
+    n_train: 10
     train_resolution: 512
-    n_tests: [1000]
+    n_tests: [10]
     test_resolutions: [512] #, 1024] 
     test_batch_sizes: [16] #, 1]
     positional_encoding: True
@@ -37,7 +37,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 500
+    n_epochs: 100
     learning_rate: 1e-3
     training_loss: 'h1'
     weight_decay: 1e-4
@@ -51,8 +51,8 @@ default: &DEFAULT
     cycle_momentum: False
     mode: "triangular2"
     last_epoch: -1
-    step_size_up: 6000 # 120 * 100 //2 
-    step_size_down: 6000
+    step_size_up: 100 # 120 * 100 //2 
+    step_size_down: 100
 
   # Patching
   patching:
@@ -77,7 +77,7 @@ default: &DEFAULT
 
     incremental_resolution:
       use: True
-      epoch_gap: 150
+      epoch_gap: 50
 
     dataset:
       SmallDarcy: [1]
