@@ -37,7 +37,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 100
+    n_epochs: 500
     learning_rate: 1e-3
     training_loss: 'h1'
     weight_decay: 1e-4
@@ -51,8 +51,8 @@ default: &DEFAULT
     cycle_momentum: False
     mode: "triangular2"
     last_epoch: -1
-    step_size_up: 10 # 120 * 100 //2 
-    step_size_down: 10
+    step_size_up: 100 # 120 * 100 //2 
+    step_size_down: 100
 
   # Patching
   patching:
@@ -77,7 +77,7 @@ default: &DEFAULT
 
     incremental_resolution:
       use: True
-      epoch_gap: 50
+      epoch_gap: 100
 
     dataset:
       SmallDarcy: [1]
