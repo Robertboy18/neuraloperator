@@ -63,7 +63,7 @@ default: &DEFAULT
   # incremental paramaters
   incremental:
     incremental_grad:
-      use: True
+      use: False
       init_modes: 6
       buffer_modes: 5
       grad_explained_ratio_threshold: 0.999
@@ -71,7 +71,7 @@ default: &DEFAULT
       grad_max_iter: 10
     
     incremental_loss_gap:
-      use: False
+      use: True
       init_modes: 1
       eps: 0.001
 
