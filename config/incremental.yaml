@@ -89,7 +89,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: navierstokes-incremental # If None, config will be used but you can override it here
+    name: navierstokes-high-data # If None, config will be used but you can override it here
     group: '' 
     project: "navierstokes-high-resolution"
     entity: "research-pino_ifno" # put your username here
