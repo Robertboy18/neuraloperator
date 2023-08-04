@@ -56,6 +56,7 @@ class Trainer:
         self.dataset_name = dataset_name
         self.save_interval = save_interval
         self.model_save_dir = model_save_dir
+        self.save = False
         #create model save dir if not exist
         os.makedirs(self.model_save_dir, exist_ok=True)
         
@@ -125,6 +126,8 @@ class Trainer:
                 x, y = self.patcher.patch(x, y)               
                 x = x.to(self.device)
                 y = y.to(self.device)
+                
+                #print("train shape: ", x.shape, y.shape)
 
                 if self.incremental_resolution:
                     x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
@@ -135,14 +138,20 @@ class Trainer:
 
                 out = model(x)
                 
+                #print("train out: ", out)
                 out, y = self.patcher.unpatch(out, y)
+                
+                #print("train out1: ", out, y)
 
                 #Output encoding only works if output is stiched
                 if output_encoder is not None and self.mg_patching_stitching:
                     out = output_encoder.decode(out)
                     y = output_encoder.decode(y)
-                    
+                
+                #print("train out2: ", out.float(), y)
                 loss = training_loss(out.float(), y)
+                
+                #print("train loss: ", loss)
 
                 if regularizer:
                     loss += regularizer.loss
@@ -210,7 +219,7 @@ class Trainer:
                     wandb.log(values_to_log, step=epoch, commit=True)
         
             #save model every save_interval epochs; contains model and checkpoint states 
-            if epoch % self.save_interval == 0:
+            if epoch % self.save_interval == 0 and self.save:
                 self.save_model_checkpoint(epoch, model, optimizer, self.index)
                 if self.wandb_log and is_logger:
                     save_path = os.path.join(self.model_save_dir, f'checkpoint_best.pt')
@@ -256,10 +265,14 @@ class Trainer:
                 y = y.to(self.device)
                 x = x.to(self.device)
                 
+                #print("test", x.shape, y.shape)
+                
                 #if self.incremental_resolution:
                 #    x, y = self.incremental_scheduler.regularize_input_res(x,y)
                 
                 out = model(x)
+                
+                #print("test", out)
         
                 out, y = self.patcher.unpatch(out, y, evaluation=True)
 
@@ -274,6 +287,7 @@ class Trainer:
                     wandb.log({f'image_{log_prefix}': wandb.Image(img.unsqueeze(-1).cpu().numpy())}, commit=False)
                 
                 for loss_name, loss in loss_dict.items():
+                    #print("LOSS", loss_name, loss(out, y).item(), out, y)
                     errors[f'{log_prefix}_{loss_name}'] += loss(out, y).item()
 
         del x, y, out

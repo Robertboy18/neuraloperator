@@ -45,12 +45,17 @@ class H5pyDataset(Dataset):
         else:
             for i in idx:
                 assert i < self.n_samples, f'Trying to access sample {i} of dataset with {self.n_samples} samples'
-    
-        x = self.data['x'][idx, ::self.subsample_step, ::self.subsample_step]
-        y = self.data['y'][idx, ::self.subsample_step, ::self.subsample_step]
         
+        #print(self.data.keys())
+        #print(self.data['512x512x2_wn1.0']['fields'])
+        x = self.data['512x512x2_wn16.0']['fields'][idx, 1:, ::self.subsample_step, ::self.subsample_step]
+        y = self.data['512x512x2_wn16.0']['fields'][idx, :1, ::self.subsample_step, ::self.subsample_step]
+        
+        #print("x shape: ", x.shape)
         x = torch.tensor(x, dtype=torch.float32)
         y = torch.tensor(y, dtype=torch.float32)
+        #print("x shape: ", x.shape)
+        #print("y shape: ", y.shape)
 
         if self.transform_x:
             x = self.transform_x(x)

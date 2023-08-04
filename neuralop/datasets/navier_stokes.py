@@ -89,7 +89,7 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
                             num_workers=0, pin_memory=True, persistent_workers=False):
     data_path = Path(data_path)
 
-    training_db = H5pyDataset(data_path / 'navier_stokes_1024_train.hdf5', n_samples=n_train, resolution=train_resolution)
+    training_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
     transform_x = []
     transform_y = None
 
@@ -131,7 +131,7 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
         if encode_output:
             transform_y = Normalizer(y_mean, y_std)
 
-        test_db = H5pyDataset(data_path / 'navier_stokes_1024_test.hdf5', n_samples=n_test, resolution=res, 
+        test_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_test, resolution=res, 
                               transform_x=transforms.Compose(transform_x), transform_y=transform_y)
     
         test_loaders[res] = torch.utils.data.DataLoader(test_db, 

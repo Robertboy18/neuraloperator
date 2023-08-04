@@ -328,6 +328,7 @@ class FactorizedSpectralConv(nn.Module):
             idx_tuple = [slice(None), slice(None)] + [slice(*b) for b in boundaries]
             
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
+            #print(indices, i, out_fft.shape, idx_tuple, x.shape, self._get_weight(indices + i).shape)
             out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(indices + i), separable=self.separable)
 
         x = torch.fft.irfftn(out_fft, s=(mode_sizes), norm=self.fft_norm)
