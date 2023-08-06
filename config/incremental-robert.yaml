@@ -20,7 +20,7 @@ default: &DEFAULT
     incremental_n_modes: (32, 32)
   
   data:
-    folder: /high_res_ns_dataset
+    folder: /home/robert/data/navierstokes_new/nsforcing_512_train1.pt
     batch_size: 16
     n_train: 10
     train_resolution: 512

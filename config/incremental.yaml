@@ -14,17 +14,17 @@ default: &DEFAULT
   # FNO related
   fno:
     data_channels: 3
-    n_modes: (32, 32)
+    n_modes: (64, 64)
     hidden_channels: 64
     projection_channels: 64
-    incremental_n_modes: (32, 32)
+    incremental_n_modes: (64, 64)
   
   data:
     folder: /high_res_ns_dataset
     batch_size: 16
-    n_train: 2
+    n_train: 2000
     train_resolution: 512
-    n_tests: [2]
+    n_tests: [2000]
     test_resolutions: [512] #, 1024] 
     test_batch_sizes: [16] #, 1]
     positional_encoding: True
@@ -37,7 +37,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 2
+    n_epochs: 500
     learning_rate: 1e-3
     training_loss: 'h1'
     weight_decay: 1e-4
@@ -91,7 +91,7 @@ default: &DEFAULT
     log: False
     name: navierstokes-high-data # If None, config will be used but you can override it here
     group: '' 
-    project: "navierstokes-high-resolution"
+    project: "turbulence"
     entity: "research-pino_ifno" # put your username here
     sweep: False
     log_output: True
@@ -102,7 +102,7 @@ default: &DEFAULT
   checkpoint:
     directory: '/ngc_workspace/jiawei/projects/checkpoint_ns/'
     name: 'checkpoints'
-    interval: 150
+    interval: 100
     save: False
     last_epoch: 0
     sub_list_index: 0

@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 class H5pyDataset(Dataset):
     """PDE h5py dataset"""
     def __init__(self, data_path, resolution=128, transform_x=None, transform_y=None,
-                 n_samples=None):
+                 n_samples=None, mode = 'train'):
         resolution_to_step = {128:8, 256:4, 512:2, 1024:1}
         try:
             subsample_step = resolution_to_step[resolution]
@@ -18,24 +18,26 @@ class H5pyDataset(Dataset):
         self._data = None
         self.transform_x = transform_x
         self.transform_y = transform_y
-
+        self.mode = mode
         if n_samples is not None:
             self.n_samples = n_samples
         else:
             with h5py.File(str(self.data_path), 'r') as f:
                 self.n_samples = f['x'].shape[0]
+                print("N_SAMPLES: ", self.n_samples)
 
     @property
     def data(self):
         if self._data is None:
-            self._data = h5py.File(str(self.data_path), 'r')
+            if self.mode == 'train':
+                self._data = h5py.File(str(self.data_path), 'r')
         return self._data
 
     def _attribute(self, variable, name):
         return self.data[variable].attrs[name]
 
     def __len__(self):
-        return self.n_samples
+        return self.n_samples-1
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -49,7 +51,7 @@ class H5pyDataset(Dataset):
         #print(self.data.keys())
         #print(self.data['512x512x2_wn1.0']['fields'])
         x = self.data['512x512x2_wn16.0']['fields'][idx, 1:, ::self.subsample_step, ::self.subsample_step]
-        y = self.data['512x512x2_wn16.0']['fields'][idx, :1, ::self.subsample_step, ::self.subsample_step]
+        y = self.data['512x512x2_wn16.0']['fields'][idx+1, 1:, ::self.subsample_step, ::self.subsample_step]
         
         #print("x shape: ", x.shape)
         x = torch.tensor(x, dtype=torch.float32)

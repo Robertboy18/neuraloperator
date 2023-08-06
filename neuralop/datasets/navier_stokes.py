@@ -1,6 +1,7 @@
 import torch
 from pathlib import Path
 from torchvision import transforms
+import torch.utils.data as data_utils
 
 from ..utils import UnitGaussianNormalizer
 from .hdf5_dataset import H5pyDataset
@@ -90,6 +91,8 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
     data_path = Path(data_path)
 
     training_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
+    indices = torch.arange(0,n_train-501,1)
+    indices2 = torch.arange(n_train-501,n_train,1)
     transform_x = []
     transform_y = None
 
@@ -111,6 +114,7 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
     training_db.transform_x = transforms.Compose(transform_x)
     training_db.transform_y = transform_y
     
+    training_db = data_utils.Subset(training_db, indices)
     train_loader = torch.utils.data.DataLoader(training_db,
                                                batch_size=batch_size, 
                                                shuffle=True,
@@ -133,7 +137,8 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
 
         test_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_test, resolution=res, 
                               transform_x=transforms.Compose(transform_x), transform_y=transform_y)
-    
+
+        test_db = data_utils.Subset(test_db, indices2)
         test_loaders[res] = torch.utils.data.DataLoader(test_db, 
                                                         batch_size=test_batch_size,
                                                         shuffle=False,
@@ -141,7 +146,7 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
                                                         pin_memory=pin_memory, 
                                                         persistent_workers=persistent_workers)
 
-    return train_loader, test_loaders, transform_y
+    return train_loader, test_loaders, transform_y #data_utils.Subset(train_loader, indices), data_utils.Subset(test_loaders, indices2), transform_y
 
 
 def load_navier_stokes_pt(data_path, train_resolution,
