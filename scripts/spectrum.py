@@ -20,12 +20,13 @@ from functools import partial
 
 from timeit import default_timer
 #from utilities4 import *
+import h5py
 
 torch.manual_seed(0)
 np.random.seed(0)
 
 T = 1200
-s = 64
+s = 512
 S = s
 
 Re = 5000
@@ -54,12 +55,12 @@ HOME_PATH = '../'
 # unet_truth = fno['truth'].squeeze().permute(2,0,1)
 # unet_pred = fno['pred'].squeeze().permute(2,0,1)
 
-
-fno = scipy.io.loadmat('/home/robert/data/NavierStokes_V1e-5_N1200_T20.mat')
+fno = h5py.File(str('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5'), 'r')
+#fno = scipy.io.loadmat('/home/robert/data/NavierStokes_V1e-5_N1200_T20.mat')
 #fno = torch.load('/home/robert/data/NavierStokes_V1e-5_N1200_T20.mat')
-print(fno['u'].shape)
-fno_truth = torch.tensor(fno['u']).squeeze().permute(0,3,1,2)
-fno_pred = torch.tensor(fno['u']).squeeze().permute(0,3,1,2)
+print(fno['512x512x2_wn16.0']['fields'].shape)
+fno_truth = torch.tensor(fno['512x512x2_wn16.0']['fields']).squeeze()
+fno_pred =  torch.tensor(fno['512x512x2_wn16.0']['fields']).squeeze()
 
 shape = fno_pred.shape
 print(shape)
@@ -144,7 +145,7 @@ frame = 64
 # unet_interp_sp = spectrum2(unet_pred_interp[0:frame+1])
 
 # pred_sp = spectrum2(pretrain_pred.reshape(50*65, 256,256))
-truth_sp = spectrum2(fno_truth.reshape(1200*20, 64, 64))
+truth_sp = spectrum2(fno_truth.reshape(2001*2, 512, 512))
 #finetune_sp = spectrum2(finetune_pred.reshape(50*65, 256,256))
 #fno_sp = spectrum2(fno_pred.reshape(50*65, 256,256))
 #unet_interp_sp = spectrum2(unet_pred_interp.reshape(50*65, 256,256))
@@ -159,7 +160,7 @@ linewidth = 3
 ax.set_yscale('log')
 # ax.set_xscale('log')
 
-length = 1024
+length = 512
 k = np.arange(length) * 1.0
 #k3 = k**-3 * 100000000000
 #k5 = k**-(5/3) * 5000000000
@@ -169,14 +170,14 @@ ax.plot(truth_sp, 'k', linestyle=":", label="NS", linewidth=4)
 # ax.plot(k, k5, 'k--',  label="k^-5/3 scaling", linewidth=linewidth)
 
 # ax.set_xlim(1,length)
-ax.set_xlim(1,200)
+ax.set_xlim(1,length)
 # ax.set_ylim(1,10000000000)
 ax.set_ylim(10, 10^10)
 # ax.set_yticks([0.05,0.10,0.15])
 #
 plt.legend(prop={'size': 20})
 # plt.title('averaged over t=[0,'+str(frame)+']' )
-plt.title('spectrum of Navier Stokes Time' )
+plt.title('spectrum of Turbulence Dataset' )
 
 plt.xlabel('wavenumber')
 plt.ylabel('energy')
