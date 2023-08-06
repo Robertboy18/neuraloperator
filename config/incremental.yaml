@@ -73,7 +73,7 @@ default: &DEFAULT
     incremental_loss_gap:
       use: False
       init_modes: 1
-      eps: 0.001
+      eps: 0.0001
 
     incremental_resolution:
       use: False
@@ -89,7 +89,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: navierstokes-high-data # If None, config will be used but you can override it here
+    name: turbulence-dataset # If None, config will be used but you can override it here
     group: '' 
     project: "navierstokes-high-resolution"
     entity: "research-pino_ifno" # put your username here
