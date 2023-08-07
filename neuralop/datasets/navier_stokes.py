@@ -93,8 +93,16 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
     training_db = H5pyDataset('/ngc_workspace/jiawei/datasets/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
     #training_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
 
-    indices = torch.arange(0,n_train-200,1)
-    indices2 = torch.arange(n_train-200,n_train,1)
+    indices = torch.randint(0,n_train,(1800,))
+    
+    # Generate all indices from 0 to 1999
+    all_indices = torch.arange(2000)
+    indices3 = all_indices[torch.logical_not(torch.isin(all_indices, indices))]
+
+    # Find the indices that are not in the given indices tensor
+    remaining_indices = torch.index_select(all_indices, 0, indices3)
+    indices2 = torch.randperm(remaining_indices.size(0))[:200]
+
     transform_x = []
     transform_y = None
 
@@ -138,10 +146,10 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
         if encode_output:
             transform_y = Normalizer(y_mean, y_std)
 
-        test_db = H5pyDataset('/ngc_workspace/jiawei/datasets/turbulence_2d_with_context.hdf5', n_samples=n_test, resolution=res, 
-                              transform_x=transforms.Compose(transform_x), transform_y=transform_y)
-        #test_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_test, resolution=res, 
+        #test_db = H5pyDataset('/ngc_workspace/jiawei/datasets/turbulence_2d_with_context.hdf5', n_samples=n_test, resolution=res, 
         #                      transform_x=transforms.Compose(transform_x), transform_y=transform_y)
+        test_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_test, resolution=res, 
+                              transform_x=transforms.Compose(transform_x), transform_y=transform_y)
         test_db = data_utils.Subset(test_db, indices2)
         #test_db = torch.utils.data.RandomSampler(test_db, replacement=False, num_samples=len(indices2))
         test_loaders[res] = torch.utils.data.DataLoader(test_db, 
