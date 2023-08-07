@@ -120,7 +120,7 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
     #training_db = torch.utils.data.RandomSampler(training_db, replacement=False, num_samples=len(indices))
     train_loader = torch.utils.data.DataLoader(training_db,
                                                batch_size=batch_size, 
-                                               shuffle=False,
+                                               shuffle=True,
                                                num_workers=num_workers,
                                                pin_memory=pin_memory,
                                                persistent_workers=persistent_workers)
@@ -146,7 +146,7 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
         #test_db = torch.utils.data.RandomSampler(test_db, replacement=False, num_samples=len(indices2))
         test_loaders[res] = torch.utils.data.DataLoader(test_db, 
                                                         batch_size=test_batch_size,
-                                                        shuffle=False,
+                                                        shuffle=True,
                                                         num_workers=num_workers, 
                                                         pin_memory=pin_memory, 
                                                         persistent_workers=persistent_workers)
