@@ -50,7 +50,7 @@ class H5pyDataset(Dataset):
         
         #print(self.data.keys())
         #print(self.data['512x512x2_wn1.0']['fields'])64x64x2_wn1.0
-        self.subsample_step = 2
+        self.subsample_step = 1
         x = self.data['512x512x2_wn16.0']['fields'][idx, 1:, ::self.subsample_step, ::self.subsample_step]
         y = self.data['512x512x2_wn16.0']['fields'][idx+1, 1:, ::self.subsample_step, ::self.subsample_step]
         

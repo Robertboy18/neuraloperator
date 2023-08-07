@@ -93,8 +93,8 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
     training_db = H5pyDataset('/ngc_workspace/jiawei/datasets/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
     #training_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
 
-    indices = torch.arange(0,n_train-501,1)
-    indices2 = torch.arange(n_train-501,n_train,1)
+    indices = torch.arange(0,n_train-200,1)
+    indices2 = torch.arange(n_train-200,n_train,1)
     transform_x = []
     transform_y = None
 
@@ -117,9 +117,10 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
     training_db.transform_y = transform_y
     
     training_db = data_utils.Subset(training_db, indices)
+    #training_db = torch.utils.data.RandomSampler(training_db, replacement=False, num_samples=len(indices))
     train_loader = torch.utils.data.DataLoader(training_db,
                                                batch_size=batch_size, 
-                                               shuffle=True,
+                                               shuffle=False,
                                                num_workers=num_workers,
                                                pin_memory=pin_memory,
                                                persistent_workers=persistent_workers)
@@ -142,6 +143,7 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
         #test_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_test, resolution=res, 
         #                      transform_x=transforms.Compose(transform_x), transform_y=transform_y)
         test_db = data_utils.Subset(test_db, indices2)
+        #test_db = torch.utils.data.RandomSampler(test_db, replacement=False, num_samples=len(indices2))
         test_loaders[res] = torch.utils.data.DataLoader(test_db, 
                                                         batch_size=test_batch_size,
                                                         shuffle=False,
