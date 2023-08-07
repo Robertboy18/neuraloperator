@@ -29,7 +29,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-turbulence; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints36";\
+                python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints37";\
             '"
     done
 done
