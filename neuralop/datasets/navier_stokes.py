@@ -90,8 +90,8 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
                             num_workers=0, pin_memory=True, persistent_workers=False):
     data_path = Path(data_path)
 
-    #training_db = H5pyDataset('/ngc_workspace/jiawei/datasets/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
-    training_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
+    training_db = H5pyDataset('/ngc_workspace/jiawei/datasets/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
+    #training_db = H5pyDataset('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5', n_samples=n_train, resolution=train_resolution)
 
     indices = torch.randint(0,n_train,(1800,))
     
