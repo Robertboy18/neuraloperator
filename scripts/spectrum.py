@@ -26,7 +26,7 @@ torch.manual_seed(0)
 np.random.seed(0)
 
 T = 1200
-s = 512
+s = 128
 S = s
 
 Re = 5000
@@ -54,13 +54,13 @@ HOME_PATH = '../'
 # fno = torch.load(HOME_PATH+'pred/prediction_unet.pt')
 # unet_truth = fno['truth'].squeeze().permute(2,0,1)
 # unet_pred = fno['pred'].squeeze().permute(2,0,1)
-
-fno = h5py.File(str('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5'), 'r')
+fno = np.load("/home/robert/data/2D_NS_Re5000.npy?download=1")
+#fno = h5py.File(str('/home/user/.julia/datadeps/Turbulence2DContext/turbulence_2d_with_context.hdf5'), 'r')
 #fno = scipy.io.loadmat('/home/robert/data/NavierStokes_V1e-5_N1200_T20.mat')
 #fno = torch.load('/home/robert/data/NavierStokes_V1e-5_N1200_T20.mat')
-print(fno['512x512x2_wn16.0']['fields'].shape)
-fno_truth = torch.tensor(fno['512x512x2_wn16.0']['fields']).squeeze()
-fno_pred =  torch.tensor(fno['512x512x2_wn16.0']['fields']).squeeze()
+print(fno.shape)
+fno_truth = torch.tensor(fno).squeeze()
+fno_pred =  torch.tensor(fno).squeeze()
 
 shape = fno_pred.shape
 print(shape)
@@ -145,7 +145,7 @@ frame = 64
 # unet_interp_sp = spectrum2(unet_pred_interp[0:frame+1])
 
 # pred_sp = spectrum2(pretrain_pred.reshape(50*65, 256,256))
-truth_sp = spectrum2(fno_truth.reshape(2001*2, 512, 512))
+truth_sp = spectrum2(fno_truth.reshape(100*501, 128, 128))
 #finetune_sp = spectrum2(finetune_pred.reshape(50*65, 256,256))
 #fno_sp = spectrum2(fno_pred.reshape(50*65, 256,256))
 #unet_interp_sp = spectrum2(unet_pred_interp.reshape(50*65, 256,256))
@@ -160,7 +160,7 @@ linewidth = 3
 ax.set_yscale('log')
 # ax.set_xscale('log')
 
-length = 512
+length = 200
 k = np.arange(length) * 1.0
 #k3 = k**-3 * 100000000000
 #k5 = k**-(5/3) * 5000000000
@@ -177,7 +177,7 @@ ax.set_ylim(10, 10^10)
 #
 plt.legend(prop={'size': 20})
 # plt.title('averaged over t=[0,'+str(frame)+']' )
-plt.title('spectrum of Turbulence Dataset' )
+plt.title('spectrum of Re5000 Dataset' )
 
 plt.xlabel('wavenumber')
 plt.ylabel('energy')
