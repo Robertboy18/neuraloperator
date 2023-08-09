@@ -2,7 +2,7 @@ TASK_NAME=ifno_batch_script_test_fno_turbulence
 
 for BASE_LR in 1e-3
 do
-    for EPS in 1e-3
+    for EPS in 100 150
     do
         ngc batch run \
             --name "ml-model.$TASK_NAME" \
@@ -29,7 +29,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-turbulence; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints38" --incremental.incremental_resolution.use=True;\
+                python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints38" --incremental.incremental_resolution.use=True --incremental.incremental_resolution.epoch_gap=$EPS;\
             '"
     done
 done
