@@ -51,8 +51,8 @@ default: &DEFAULT
     cycle_momentum: False
     mode: "triangular2"
     last_epoch: -1
-    step_size_up: 75 # 120 * 100 //2 
-    step_size_down: 75
+    step_size_up: 50 # 120 * 100 //2 
+    step_size_down: 50
 
   # Patching
   patching:
