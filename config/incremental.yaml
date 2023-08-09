@@ -89,7 +89,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: turbulence-512-wavenumber16-shuffle-first-incremental # If None, config will be used but you can override it here
+    name: turbulence-512-wavenumber16-shuffle-first-incremental-resolution # If None, config will be used but you can override it here
     group: '' 
     project: "turbulence"
     entity: "research-pino_ifno" # put your username here
