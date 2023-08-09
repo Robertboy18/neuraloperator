@@ -29,7 +29,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-turbulence; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints31" --incremental.incremental_loss_gap.use=True --incremental.incremental_loss_gap.eps=$EPS;\
+                python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints31" --incremental.incremental_loss_gap.use=True --incremental.incremental_loss_gap.eps=$EPS --incremental.incremental_resolution.use=True;\
             '"
     done
 done
@@ -65,7 +65,7 @@ do
                 cd /workspace/neuraloperator/scripts; \
                 git checkout robert-turbulence; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints32" --incremental.incremental_grad.use=True --incremental.incremental_grad.grad_explained_ratio_threshold=$EPS;\
+                python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints32" --incremental.incremental_grad.use=True --incremental.incremental_grad.grad_explained_ratio_threshold=$EPS --incremental.incremental_resolution.use=True;\
             '"
     done
 done
