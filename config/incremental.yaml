@@ -14,10 +14,10 @@ default: &DEFAULT
   # FNO related
   fno:
     data_channels: 3
-    n_modes: (64, 64)
+    n_modes: (32, 32)
     hidden_channels: 64
     projection_channels: 64
-    incremental_n_modes: (64, 64)
+    incremental_n_modes: (32, 32)
   
   data:
     folder: /high_res_ns_dataset
@@ -89,7 +89,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: turbulence-512-wavenumber16-shuffle-first-incremental-resolution # If None, config will be used but you can override it here
+    name: turbulence-512-wavenumber16 # If None, config will be used but you can override it here
     group: '' 
     project: "turbulence"
     entity: "research-pino_ifno" # put your username here
