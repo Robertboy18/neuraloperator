@@ -8,6 +8,7 @@ from neuralop.training import setup
 from neuralop.datasets.navier_stokes import load_navier_stokes_hdf5
 from neuralop.utils import get_wandb_api_key, count_params
 from neuralop import LpLoss, H1Loss
+import numpy as np
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -45,15 +46,50 @@ config.verbose = config.verbose and is_logger
 if config.verbose:
     pipe.log()
     sys.stdout.flush()
+    
+# Main
+ntrain = 900
+ntest = 100
 
-# Loading the Navier-Stokes dataset in 128x128 resolution
-train_loader, test_loaders, output_encoder = load_navier_stokes_hdf5(
-        config.data.folder, train_resolution=config.data.train_resolution, n_train=config.data.n_train, batch_size=config.data.batch_size, 
-        positional_encoding=config.data.positional_encoding,
-        test_resolutions=config.data.test_resolutions, n_tests=config.data.n_tests, test_batch_sizes=config.data.test_batch_sizes,
-        encode_input=config.data.encode_input, encode_output=config.data.encode_output,
-        num_workers=config.data.num_workers, pin_memory=config.data.pin_memory, persistent_workers=config.data.persistent_workers
-        )
+modes = 20
+width = 128
+
+in_dim = 1
+out_dim = 1
+
+batch_size = 50
+epochs = 50
+learning_rate = 0.0005
+scheduler_step = 10
+scheduler_gamma = 0.5
+
+loss_k = 0 # H0 Sobolev loss = L2 loss
+loss_group = True
+
+print(epochs, learning_rate, scheduler_step, scheduler_gamma)
+
+sub = 1 # spatial subsample
+S = 64
+
+T_in = 100 # skip first 100 seconds of each trajectory to let trajectory reach attractor
+T = 400 # seconds to extract from each trajectory in data
+T_out = T_in + T
+step = 1 # Seconds to learn solution operator
+
+data = np.load('/home/robert/data/2D_NS_Re5000.npy?download=1')
+data = torch.tensor(data, dtype=torch.float)[..., ::sub, ::sub]
+
+rate = 160000
+train_a = data[:ntrain,T_in-1:T_out-1].reshape(rate, S, S)
+train_u = data[:ntrain,T_in:T_out].reshape(rate, S, S)
+
+test_a = data[-ntest:,T_in-1:T_out-1].reshape(rate, S, S)
+test_u = data[-ntest:,T_in:T_out].reshape(rate, S, S)
+
+assert (S == train_u.shape[2])
+
+train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(train_a, train_u), batch_size=batch_size, shuffle=True)
+test_loaders = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u), batch_size=batch_size, shuffle=False)
 
 model = get_model(config)
 model = model.to(device)
@@ -100,7 +136,7 @@ elif config.opt.scheduler == 'CyclicLR':
 else:
     raise ValueError(f'Got {config.opt.scheduler=}')
 
-
+output_encoder = None
 # Creating the losses
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
@@ -133,7 +169,7 @@ trainer = Trainer(model, n_epochs=config.opt.n_epochs,
                   use_distributed=config.distributed.use_distributed,
                   verbose=config.verbose, incremental = config.incremental.incremental_grad.use, 
                   incremental_loss_gap=config.incremental.incremental_loss_gap.use, 
-                  incremental_resolution=config.incremental.incremental_resolution.use, dataset_name="NavierStokes", save_interval=config.checkpoint.interval, model_save_dir=config.checkpoint.directory + config.checkpoint.name)
+                  incremental_resolution=config.incremental.incremental_resolution.use, dataset_name="Burgers", save_interval=config.checkpoint.interval, model_save_dir=config.checkpoint.directory + config.checkpoint.name)
 
 if config.checkpoint.save:
     # load model from dict
@@ -141,8 +177,7 @@ if config.checkpoint.save:
     trainer.load_model_checkpoint(model_load_epoch, model, optimizer, config.checkpoint.sub_list_index)
     msg = f'[{model_load_epoch}]'
 
-trainer.train(train_loader, test_loaders,
-              output_encoder,
+trainer.train(train_loader, test_loaders, output_encoder,
               model, 
               optimizer,
               scheduler, 
