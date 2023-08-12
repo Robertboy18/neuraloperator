@@ -1,7 +1,7 @@
 import torch
 import h5py
 from torch.utils.data import Dataset
-
+import numpy as np
 
 class H5pyDataset(Dataset):
     """PDE h5py dataset"""
@@ -37,7 +37,7 @@ class H5pyDataset(Dataset):
         return self.data[variable].attrs[name]
 
     def __len__(self):
-        return self.n_samples-1
+        return self.n_samples-2
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -51,8 +51,12 @@ class H5pyDataset(Dataset):
         #print(self.data.keys())
         #print(self.data['512x512x2_wn1.0']['fields'])64x64x2_wn1.0
         self.subsample_step = 1
-        x = self.data['512x512x2_wn16.0']['fields'][idx, 1:, ::self.subsample_step, ::self.subsample_step]
-        y = self.data['512x512x2_wn16.0']['fields'][idx+1, 1:, ::self.subsample_step, ::self.subsample_step]
+        x1= self.data['512x512x2_wn16.0']['fields'][idx, 1:, ::self.subsample_step, ::self.subsample_step]
+        x2= self.data['512x512x2_wn16.0']['fields'][idx+1, 1:, ::self.subsample_step, ::self.subsample_step]
+        x3= self.data['512x512x2_wn16.0']['fields'][idx+2, 1:, ::self.subsample_step, ::self.subsample_step]
+        #print(x1.shape, x2.shape, x3.shape)
+        x = np.concatenate((x1,x2,x3))
+        y = self.data['512x512x2_wn16.0']['fields'][idx+3, 1:, ::self.subsample_step, ::self.subsample_step]
         
         x = torch.tensor(x, dtype=torch.float32)
         y = torch.tensor(y, dtype=torch.float32)
@@ -60,10 +64,12 @@ class H5pyDataset(Dataset):
         #print("y shape: ", y.shape)
 
         if self.transform_x:
-            x = self.transform_x(x)
+            #x = self.transform_x(x)
+            pass
 
         if self.transform_y:
-            y = self.transform_y(y)
+            #y = self.transform_y(y)
+            pass
 
         return {'x': x, 'y': y}
     
