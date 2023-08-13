@@ -2,7 +2,7 @@ TASK_NAME=ifno_batch_script_test_fno_turbulence
 
 for BASE_LR in 1e-3
 do
-    for EPS in 1e-3 1e-2
+    for EPS in 1e-4 1e-3
     do
         for EPOCH in 100 150
         do
@@ -10,7 +10,7 @@ do
                 --name "ml-model.$TASK_NAME" \
                 --preempt RUNONCE \
                 --ace nv-us-west-2 \
-                --instance dgx1v.32g.1.norm \
+                --instance dgx1v.64g.1.norm \
                 --image nvcr.io/nvidian/nvr-aialgo/fly-incremental:zoo_latest \
                 --result /results \
                 --workspace 6Ubcqvn_Rn6uKFJw4ijJdw:/ngc_workspace \
@@ -41,7 +41,7 @@ TASK_NAME=ifno_batch_script_test_fno_turbulence
 
 for BASE_LR in 1e-3
 do
-    for EPS in 1e-3 1e-2
+    for EPS in 1e-4 1e-3
     do
         for EPOCH in 100
         do
@@ -49,7 +49,7 @@ do
                 --name "ml-model.$TASK_NAME" \
                 --preempt RUNONCE \
                 --ace nv-us-west-2 \
-                --instance dgx1v.32g.1.norm \
+                --instance dgx1v.64g.1.norm \
                 --image nvcr.io/nvidian/nvr-aialgo/fly-incremental:zoo_latest \
                 --result /results \
                 --workspace 6Ubcqvn_Rn6uKFJw4ijJdw:/ngc_workspace \
