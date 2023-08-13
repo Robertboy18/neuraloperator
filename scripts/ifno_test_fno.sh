@@ -2,7 +2,7 @@ TASK_NAME=ifno_batch_script_test_fno_turbulence
 
 for BASE_LR in 1e-3
 do
-    for EPS in 1e-3 1e-4
+    for EPS in 1e-3
     do
         for EPOCH in 100 150
         do
@@ -31,7 +31,7 @@ do
                     cd /workspace/neuraloperator/scripts; \
                     git checkout robert-turbulence; \
                     cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                    python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints34" --incremental.incremental_resolution.use=True --incremental.incremental_loss_gap.use=True --incremental.incremental_loss_gap.eps=$EPS --incremental.incremental_resolution.epoch_gap=$EPOCH;\
+                    python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$EPS --checkpoint.name="checkpoints34" --incremental.incremental_resolution.use=True --incremental.incremental_resolution.epoch_gap=$EPOCH;\
                 '"     
         done    
     done
@@ -41,9 +41,9 @@ TASK_NAME=ifno_batch_script_test_fno_turbulence
 
 for BASE_LR in 1e-3
 do
-    for EPS in 0.99 0.999
+    for EPS in 0.99
     do
-        for EPOCH in 100 150
+        for EPOCH in 100
         do
             ngc batch run \
                 --name "ml-model.$TASK_NAME" \
@@ -70,7 +70,7 @@ do
                     cd /workspace/neuraloperator/scripts; \
                     git checkout robert-turbulence; \
                     cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                    python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints33" --incremental.incremental_resolution.use=True --incremental.incremental_grad.use=True --incremental.incremental_grad.grad_explained_ratio_threshold=$EPS --incremental.incremental_resolution.epoch_gap=$EPOCH;\
+                    python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints33";\
                 '"     
         done    
     done
