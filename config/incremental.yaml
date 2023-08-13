@@ -14,10 +14,10 @@ default: &DEFAULT
   # FNO related
   fno:
     data_channels: 3
-    n_modes: (48, 48)
+    n_modes: (64, 64)
     hidden_channels: 64
     projection_channels: 64
-    incremental_n_modes: (48, 48)
+    incremental_n_modes: (2, 2)
   
   data:
     folder: /high_res_ns_dataset
@@ -40,7 +40,7 @@ default: &DEFAULT
     n_epochs: 500
     learning_rate: 1e-3
     training_loss: 'h1'
-    weight_decay: 1e-4
+    weight_decay: 1e-3
     amp_autocast: False
 
     scheduler: 'CyclicLR' #'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
