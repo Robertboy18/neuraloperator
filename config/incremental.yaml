@@ -21,12 +21,12 @@ default: &DEFAULT
   
   data:
     folder: /high_res_ns_dataset
-    batch_size: 16
+    batch_size: 4
     n_train: 1996
     train_resolution: 512
     n_tests: [1996]
     test_resolutions: [512] #, 1024] 
-    test_batch_sizes: [16] #, 1]
+    test_batch_sizes: [4] #, 1]
     positional_encoding: True
 
     encode_input: False
