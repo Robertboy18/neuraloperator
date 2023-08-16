@@ -96,12 +96,12 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
     indices = torch.randint(0,n_train,(1800,))
     
     # Generate all indices from 0 to 1999
-    all_indices = torch.arange(1996)
+    all_indices = torch.arange(n_train)
     indices3 = all_indices[torch.logical_not(torch.isin(all_indices, indices))]
 
     # Find the indices that are not in the given indices tensor
     remaining_indices = torch.index_select(all_indices, 0, indices3)
-    indices2 = torch.randperm(remaining_indices.size(0))[:196]
+    indices2 = torch.randperm(remaining_indices.size(0))[:n_train-1800]
 
     transform_x = []
     transform_y = None
