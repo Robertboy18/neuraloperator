@@ -13,7 +13,7 @@ default: &DEFAULT
 
   # FNO related
   fno:
-    data_channels: 7
+    data_channels: 3
     n_modes: (128, 128)
     hidden_channels: 128
     projection_channels: 128
@@ -22,9 +22,9 @@ default: &DEFAULT
   data:
     folder: /high_res_ns_dataset
     batch_size: 4
-    n_train: 1993
+    n_train: 1996
     train_resolution: 512
-    n_tests: [1993]
+    n_tests: [1996]
     test_resolutions: [512] #, 1024] 
     test_batch_sizes: [4] #, 1]
     positional_encoding: True
