@@ -51,10 +51,10 @@ class H5pyDataset(Dataset):
         #print(self.data.keys())
         #print(self.data['512x512x2_wn1.0']['fields'])64x64x2_wn1.0
         self.subsample_step = 1
-        x= self.data['512x512x2_wn16.0']['fields'][idx, 1:, ::self.subsample_step, ::self.subsample_step]
-        """
+        x1= self.data['512x512x2_wn16.0']['fields'][idx, 1:, ::self.subsample_step, ::self.subsample_step]
         x2= self.data['512x512x2_wn16.0']['fields'][idx+1, 1:, ::self.subsample_step, ::self.subsample_step]
         x3= self.data['512x512x2_wn16.0']['fields'][idx+2, 1:, ::self.subsample_step, ::self.subsample_step]
+        """
         x4= self.data['512x512x2_wn16.0']['fields'][idx+3, 1:, ::self.subsample_step, ::self.subsample_step]
         x5= self.data['512x512x2_wn16.0']['fields'][idx+4, 1:, ::self.subsample_step, ::self.subsample_step]
         x6= self.data['512x512x2_wn16.0']['fields'][idx+5, 1:, ::self.subsample_step, ::self.subsample_step]
@@ -68,9 +68,9 @@ class H5pyDataset(Dataset):
         x14= self.data['512x512x2_wn16.0']['fields'][idx+13, 1:, ::self.subsample_step, ::self.subsample_step]
         x15= self.data['512x512x2_wn16.0']['fields'][idx+14, 1:, ::self.subsample_step, ::self.subsample_step]
         #print(x1.shape, x2.shape, x3.shape)
-        x = np.concatenate((x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15))
         """
-        y = self.data['512x512x2_wn16.0']['fields'][idx+1, 1:, ::self.subsample_step, ::self.subsample_step]
+        x = np.concatenate((x1,x2,x3))
+        y = self.data['512x512x2_wn16.0']['fields'][idx+3, 1:, ::self.subsample_step, ::self.subsample_step]
         
         x = torch.tensor(x, dtype=torch.float32)
         y = torch.tensor(y, dtype=torch.float32)
@@ -78,10 +78,12 @@ class H5pyDataset(Dataset):
         #print("y shape: ", y.shape)
 
         if self.transform_x:
-            x = self.transform_x(x)
+            #x = self.transform_x(x)
+            pass
 
         if self.transform_y:
-            y = self.transform_y(y)
+            #y = self.transform_y(y)
+            pass
 
         return {'x': x, 'y': y}
     
