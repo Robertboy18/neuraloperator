@@ -1,5 +1,6 @@
 import torch
 import wandb
+import numpy as np
 import sys
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop import get_model
@@ -11,6 +12,8 @@ from neuralop import LpLoss, H1Loss
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+torch.manual_seed(0)
+np.random.seed(0)
 
 # Read the configuration
 config_name = 'default'
