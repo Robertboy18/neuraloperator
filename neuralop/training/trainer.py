@@ -184,7 +184,7 @@ class Trainer:
                     else:
                         to_log_output = False
 
-                    errors = self.evaluate(model, eval_losses, loader, output_encoder, log_prefix=loader_name)
+                    errors = self.evaluate(model, eval_losses, loader, output_encoder, log_prefix=loader_name, epoch=epoch)
 
                     for loss_name, loss_value in errors.items():
                         msg += f', {loss_name}={loss_value:.4f}'
@@ -217,7 +217,7 @@ class Trainer:
                     wandb.save(save_path)
 
     def evaluate(self, model, loss_dict, data_loader, output_encoder=None,
-                 log_prefix=''):
+                 log_prefix='', epoch=0):
         """Evaluates the model on a dictionary of losses
         
         Parameters
@@ -256,8 +256,8 @@ class Trainer:
                 y = y.to(self.device)
                 x = x.to(self.device)
                 
-                #if self.incremental_resolution:
-                #    x, y = self.incremental_scheduler.regularize_input_res(x,y)
+                if self.incremental_resolution:
+                    x, y, self.index = self.incremental_scheduler.step(epoch, x = x, y = y)
                 
                 out = model(x)
         
