@@ -56,6 +56,7 @@ class Trainer:
         self.dataset_name = dataset_name
         self.save_interval = save_interval
         self.model_save_dir = model_save_dir
+        self.epoch = 0
         #create model save dir if not exist
         os.makedirs(self.model_save_dir, exist_ok=True)
         
@@ -117,6 +118,7 @@ class Trainer:
             model.train()
             t1 = default_timer()
             train_err = 0.0
+            self.epoch = epoch
             for sample in train_loader:
                 if self.dataset_name == 'Burgers':
                     x, y = sample[0], sample[1]
@@ -184,7 +186,7 @@ class Trainer:
                     else:
                         to_log_output = False
 
-                    errors = self.evaluate(model, eval_losses, loader, output_encoder, log_prefix=loader_name, epoch=epoch)
+                    errors = self.evaluate(model, eval_losses, loader, output_encoder, log_prefix=loader_name)
 
                     for loss_name, loss_value in errors.items():
                         msg += f', {loss_name}={loss_value:.4f}'
@@ -217,7 +219,7 @@ class Trainer:
                     wandb.save(save_path)
 
     def evaluate(self, model, loss_dict, data_loader, output_encoder=None,
-                 log_prefix='', epoch=0):
+                 log_prefix=''):
         """Evaluates the model on a dictionary of losses
         
         Parameters
@@ -257,7 +259,7 @@ class Trainer:
                 x = x.to(self.device)
                 
                 if self.incremental_resolution:
-                    x, y, self.index = self.incremental_scheduler.step(epoch, x = x, y = y)
+                    x, y, self.index = self.incremental_scheduler.step(epoch=self.epoch, x = x, y = y)
                 
                 out = model(x)
         
