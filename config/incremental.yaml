@@ -14,17 +14,17 @@ default: &DEFAULT
   # FNO related
   fno:
     data_channels: 3
-    n_modes: (48, 48)
-    hidden_channels: 48
-    projection_channels: 48
-    incremental_n_modes: (48, 48)
+    n_modes: (256, 256)
+    hidden_channels: 256
+    projection_channels: 256
+    incremental_n_modes: (256, 256)
   
   data:
     folder: /high_res_ns_dataset
     batch_size: 4
-    n_train: 1996
+    n_train: 2000
     train_resolution: 512
-    n_tests: [1996]
+    n_tests: [2000]
     test_resolutions: [512] #, 1024] 
     test_batch_sizes: [4] #, 1]
     positional_encoding: True
@@ -89,7 +89,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: turbulence-3timestep-48 # If None, config will be used but you can override it here
+    name: turbulence-1timestep-256 # If None, config will be used but you can override it here
     group: '' 
     project: "turbulence"
     entity: "research-pino_ifno" # put your username here
