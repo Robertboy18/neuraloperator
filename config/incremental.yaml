@@ -14,10 +14,10 @@ default: &DEFAULT
   # FNO related
   fno:
     data_channels: 3
-    n_modes: (256, 256)
+    n_modes: (128, 128)
     hidden_channels: 64
     projection_channels: 32
-    incremental_n_modes: (256, 256)
+    incremental_n_modes: (128, 128)
   
   data:
     folder: /high_res_ns_dataset
