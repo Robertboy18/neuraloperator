@@ -2,9 +2,9 @@ TASK_NAME=ifno_batch_script_test_fno_turbulence-allwary
 
 for BASE_LR in 1e-3
 do
-    for DECAY in 1e-4 1e-3
+    for DECAY in 32 64 128 256
     do
-        for EPOCH in 500 1000
+        for EPOCH in 500
         do
             ngc batch run \
                 --name "ml-model.$TASK_NAME" \
@@ -31,7 +31,7 @@ do
                     cd /workspace/neuraloperator/scripts; \
                     git checkout robert-turbulence; \
                     cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                    python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints40" --opt.n_epochs=$EPOCH --opt.weight_decay=$DECAY;\
+                    python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints40" --opt.n_epochs=$EPOCH --fno.hidden_channels=$DECAY;\
                 '"     
         done    
     done
