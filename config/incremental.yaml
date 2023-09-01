@@ -13,10 +13,10 @@ default: &DEFAULT
 
   # FNO related
   fno:
-    data_channels: 3
+    data_channels: 1
     n_modes: (256, 256)
-    hidden_channels: 256
-    projection_channels: 256
+    hidden_channels: 64
+    projection_channels: 32
     incremental_n_modes: (256, 256)
   
   data:
