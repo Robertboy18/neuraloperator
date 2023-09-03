@@ -2,7 +2,7 @@ TASK_NAME=ifno_batch_script_test_fno_turbulence-allwary
 
 for BASE_LR in 1e-3
 do
-    for DECAY in 32 64 128 256
+    for DECAY in 8 16 32 64
     do
         for EPOCH in 500
         do
