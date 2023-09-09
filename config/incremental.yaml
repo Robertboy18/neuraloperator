@@ -14,19 +14,19 @@ default: &DEFAULT
   # FNO related
   fno:
     data_channels: 3
-    n_modes: (64, 64)
-    hidden_channels: 32
-    projection_channels: 32
-    incremental_n_modes: (64, 64)
+    n_modes: (16, 16)
+    hidden_channels: 16
+    projection_channels: 16
+    incremental_n_modes: (16, 16)
   
   data:
     folder: /high_res_ns_dataset
-    batch_size: 16
+    batch_size: 8
     n_train: 2000
     train_resolution: 512
     n_tests: [2000]
     test_resolutions: [512] #, 1024] 
-    test_batch_sizes: [16] #, 1]
+    test_batch_sizes: [8] #, 1]
     positional_encoding: True
 
     encode_input: False
