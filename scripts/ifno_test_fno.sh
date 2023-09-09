@@ -23,7 +23,6 @@ do
                     pip install configmypy zarr mpi4py; \
                     pip install -U tensorly; \
                     pip install -U tensorly-torch ; \
-                    pip install -U mpi4py; \
                     cd /workspace; \
                     git clone https://github.com/Robertboy18/neuraloperator.git; \
                     cd /workspace/neuraloperator; \
