@@ -4,7 +4,7 @@ for BASE_LR in 1e-3
 do
     for MODES in 8
     do
-        for EPOCH in 10000
+        for EPOCH in 1000
         do
             ngc batch run \
                 --name "ml-model.$TASK_NAME" \
