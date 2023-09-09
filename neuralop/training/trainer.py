@@ -215,7 +215,7 @@ class Trainer:
                     for pg in optimizer.param_groups:
                         lr = pg['lr']
                         values_to_log['lr'] = lr
-                        values_to_log['mode_evolution'] = model.convs.incremental_n_modes
+                        values_to_log['mode_evolution'] = model.module.convs.incremental_n_modes
                     wandb.log(values_to_log, step=epoch, commit=True)
         
             #save model every save_interval epochs; contains model and checkpoint states 

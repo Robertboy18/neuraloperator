@@ -5,28 +5,28 @@ default: &DEFAULT
   arch: 'fno'
 
   distributed:
-    use_distributed: False
+    use_distributed: True
     wireup_info: 'mpi'
     wireup_store: 'tcp'
-    model_parallel_size: 2
+    model_parallel_size: 1
     seed: 666
 
   # FNO related
   fno:
     data_channels: 3
     n_modes: (64, 64)
-    hidden_channels: 64
+    hidden_channels: 32
     projection_channels: 32
     incremental_n_modes: (64, 64)
   
   data:
     folder: /high_res_ns_dataset
-    batch_size: 4
+    batch_size: 16
     n_train: 2000
     train_resolution: 512
     n_tests: [2000]
     test_resolutions: [512] #, 1024] 
-    test_batch_sizes: [4] #, 1]
+    test_batch_sizes: [16] #, 1]
     positional_encoding: True
 
     encode_input: False
@@ -37,14 +37,14 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 500
+    n_epochs: 10000
     learning_rate: 1e-3
     training_loss: 'h1'
     weight_decay: 1e-4
     amp_autocast: False
 
-    scheduler: 'CyclicLR' #'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
-    step_size: 100
+    scheduler: 'StepLR' #'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
+    step_size: 150
     gamma: 0.5
     base_lr: 1e-3
     max_lr: 1e-2
@@ -89,20 +89,20 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: turbulence-1timestep-256 # If None, config will be used but you can override it here
+    name: turbulence-1timestep-64-32 # If None, config will be used but you can override it here
     group: '' 
     project: "turbulence"
     entity: "research-pino_ifno" # put your username here
     sweep: False
     log_output: True
-    log_test_interval: 5
+    log_test_interval: 1
 
   n_params_baseline: None
   
   checkpoint:
     directory: '/ngc_workspace/jiawei/projects/checkpoint_ns/'
     name: 'checkpoints'
-    interval: 100
+    interval: 1000
     save: False
     last_epoch: 0
     sub_list_index: 0
