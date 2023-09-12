@@ -119,13 +119,18 @@ class Trainer:
             t1 = default_timer()
             train_err = 0.0
             for sample in train_loader:
-                if self.dataset_name == 'Burgers':
+                if self.dataset_name == 'Burgers' or self.dataset_name == 'Re5000':
                     x, y = sample[0], sample[1]
                 else:
                     x, y = sample['x'], sample['y']
-                x, y = self.patcher.patch(x, y)               
-                x = x.to(self.device)
-                y = y.to(self.device)
+                x, y = self.patcher.patch(x, y)
+                
+                if self.dataset_name == 'Re5000':
+                    x = x.to(self.device).view(50, 128, 128, 1)
+                    y = y.to(self.device).view(50, 128, 128, 1)   
+                else:      
+                    x = x.to(self.device)
+                    y = y.to(self.device)
                 
                 #print("train shape: ", x.shape, y.shape)
 
@@ -136,7 +141,10 @@ class Trainer:
                 if regularizer:
                     regularizer.reset()
 
-                out = model(x)
+                if self.dataset_name == 'Re5000':
+                    out = model(x).reshape(50, 128, 128, 1)
+                else:
+                    out = model(x)
                 
                 #print("train out: ", out)
                 out, y = self.patcher.unpatch(out, y)
@@ -178,7 +186,10 @@ class Trainer:
             epoch_train_time = default_timer() - t1
             del x, y
 
-            train_err/= n_train
+            if self.dataset_name == 'Re5000':
+                train_err/= (n_train*400)
+            else:
+                train_err/= n_train
             avg_loss /= self.n_epochs
             
             if epoch % self.log_test_interval == 0: 
@@ -262,18 +273,19 @@ class Trainer:
                 n_samples += x.size(0)
                 
                 x, y = self.patcher.patch(x, y)
-                y = y.to(self.device)
-                x = x.to(self.device)
                 
-                #print("test", x.shape, y.shape)
+                if self.dataset_name == 'Re5000':
+                    x = x.to(self.device).view(50, 128, 128, 1)
+                    y = y.to(self.device).view(50, 128, 128, 1)
+                else:
+                    y = y.to(self.device)
+                    x = x.to(self.device)
                 
-                #if self.incremental_resolution:
-                #    x, y = self.incremental_scheduler.regularize_input_res(x,y)
-                
-                out = model(x)
-                
-                #print("test", out)
-        
+                if self.dataset_name == 'Re5000':
+                    out
+                else:
+                    out = model(x)
+                        
                 out, y = self.patcher.unpatch(out, y, evaluation=True)
 
                 if output_encoder is not None:
@@ -293,7 +305,10 @@ class Trainer:
         del x, y, out
 
         for key in errors.keys():
-            errors[key] /= n_samples
+            if self.dataset_name == 'Re5000':
+                errors[key] /= (n_samples*400)
+            else:
+                errors[key] /= n_samples
 
         return errors
 
