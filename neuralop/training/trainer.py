@@ -126,8 +126,8 @@ class Trainer:
                 x, y = self.patcher.patch(x, y)
                 
                 if self.dataset_name == 'Re5000':
-                    x = x.to(self.device).view(50, 128, 128, 1)
-                    y = y.to(self.device).view(50, 128, 128, 1)   
+                    x = x.to(self.device).view(50, 1, 128, 128)
+                    y = y.to(self.device).view(50, 1, 128, 128)   
                 else:      
                     x = x.to(self.device)
                     y = y.to(self.device)
@@ -142,7 +142,7 @@ class Trainer:
                     regularizer.reset()
 
                 if self.dataset_name == 'Re5000':
-                    out = model(x).reshape(50, 128, 128, 1)
+                    out = model(x).reshape(50, 1, 128, 128)
                 else:
                     out = model(x)
                 
@@ -185,9 +185,9 @@ class Trainer:
 
             epoch_train_time = default_timer() - t1
             del x, y
-
+            T = 1
             if self.dataset_name == 'Re5000':
-                train_err/= (n_train*400)
+                train_err/= (n_train*T)
             else:
                 train_err/= n_train
             avg_loss /= self.n_epochs
@@ -268,21 +268,24 @@ class Trainer:
         n_samples = 0
         with torch.no_grad():
             for it, sample in enumerate(data_loader):
-                x, y = sample['x'], sample['y']
+                if self.dataset_name == 'Burgers' or self.dataset_name == 'Re5000':
+                    x, y = sample[0], sample[1]
+                else:
+                    x, y = sample['x'], sample['y']
 
                 n_samples += x.size(0)
                 
                 x, y = self.patcher.patch(x, y)
                 
                 if self.dataset_name == 'Re5000':
-                    x = x.to(self.device).view(50, 128, 128, 1)
-                    y = y.to(self.device).view(50, 128, 128, 1)
+                    x = x.to(self.device).view(50, 1, 128, 128)
+                    y = y.to(self.device).view(50, 1, 128, 128)
                 else:
                     y = y.to(self.device)
                     x = x.to(self.device)
                 
                 if self.dataset_name == 'Re5000':
-                    out
+                    out = model(x).reshape(50, 1, 128, 128)
                 else:
                     out = model(x)
                         
@@ -303,10 +306,10 @@ class Trainer:
                     errors[f'{log_prefix}_{loss_name}'] += loss(out, y).item()
 
         del x, y, out
-
+        T = 1
         for key in errors.keys():
             if self.dataset_name == 'Re5000':
-                errors[key] /= (n_samples*400)
+                errors[key] /= (n_samples*1)
             else:
                 errors[key] /= n_samples
 
