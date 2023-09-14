@@ -1,4 +1,4 @@
-TASK_NAME=ifno_batch_script_test_fno_turbulence-allwary
+TASK_NAME=ifno_batch_script_re5000
 
 for BASE_LR in 1e-3
 do
@@ -23,15 +23,20 @@ do
                     pip install configmypy zarr mpi4py; \
                     pip install -U tensorly; \
                     pip install -U tensorly-torch ; \
-                    cd /workspace; \
+                    cd /workspace; \    
                     git clone https://github.com/Robertboy18/neuraloperator.git; \
                     cd /workspace/neuraloperator; \
                     pip install -e . ; \
                     cp /ngc_workspace/jiawei/wandb_api_key.txt config/wandb_api_key.txt; \
                     cd /workspace/neuraloperator/scripts; \
                     git checkout robert-turbulence; \
-                    cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
-                    mpiexec --allow-run-as-root -n 8 python train_2d.py --opt.scheduler="StepLR" --opt.learning_rate=$BASE_LR --checkpoint.name="checkpoints40" --opt.n_epochs=$EPOCH;\
+                    cd ..; \
+                    cd ..; \
+                    git clone https://github.com/Robertboy18/markov_neural_operator.git; \
+                    cd /workspace/markov_neural_operator; \
+                    cd /scripts; \
+                    git checkout robert-test; \
+                    python NS_fno_baseline-trial.py;\
                 '"     
         done    
     done
