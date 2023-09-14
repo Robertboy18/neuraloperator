@@ -28,7 +28,7 @@ ngc batch run \
     git checkout robert-turbulence; \
     cd ..; \
     cd ..; \
-    git clone https://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@github.com/Robertboy18/markov_neural_operator.git; \
+    git clone https://github.com/Robertboy18/markov_neural_operator.git; \
     cd /workspace/markov_neural_operator; \
     cd /scripts; \
     git checkout robert-test; \
