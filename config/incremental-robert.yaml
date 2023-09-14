@@ -14,10 +14,10 @@ default: &DEFAULT
   # FNO related
   fno:
     data_channels: 3
-    n_modes: (32, 32)
+    n_modes: (64, 64)
     hidden_channels: 32
     projection_channels: 32
-    incremental_n_modes: (32, 32)
+    incremental_n_modes: (2, 2)
   
   data:
     folder: /home/robert/data/navierstokes_new/nsforcing_512_train1.pt
