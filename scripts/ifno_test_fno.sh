@@ -34,7 +34,7 @@ do
                     cd ..; \
                     git clone https://github.com/Robertboy18/markov_neural_operator.git; \
                     cd /workspace/markov_neural_operator; \
-                    cd /scripts; \
+                    cd scripts; \
                     git checkout robert-test; \
                     python NS_fno_baseline-trial.py;\
                 '"     
