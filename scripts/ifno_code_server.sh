@@ -19,13 +19,19 @@ ngc batch run \
     pip install configmypy zarr mpi4py; \
     pip install -U tensorly; \
     pip install -U tensorly-torch ; \
-    cd /workspace; \
+    cd /workspace; \    
     git clone https://github.com/Robertboy18/neuraloperator.git; \
     cd /workspace/neuraloperator; \
     pip install -e . ; \
     cp /ngc_workspace/jiawei/wandb_api_key.txt config/wandb_api_key.txt; \
     cd /workspace/neuraloperator/scripts; \
-    git checkout robert-test-incremental; \
+    git checkout robert-turbulence; \
+    cd ..; \
+    cd ..; \
+    git clone https://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@github.com/Robertboy18/markov_neural_operator.git; \
+    cd /workspace/markov_neural_operator; \
+    cd /scripts; \
+    git checkout robert-test; \
     bash -c 'curl -fsSL https://code-server.dev/install.sh | sh -s -- --version=4.9.1 ; \
     cp -r /ngc_workspace/jiawei/stored_ngc_info/.ssh /root/.ssh; \
     git config --global --add safe.directory /ngc_workspace/jiawei/projects/fly-incremental; \
