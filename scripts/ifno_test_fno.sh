@@ -36,7 +36,7 @@ do
                     cd /workspace/markov_neural_operator; \
                     cd scripts; \
                     git checkout robert-test; \
-                    python NS_fno_baseline-trial.py;\
+                    python NS_mno_dissipative-trial.py;\
                 '"     
         done    
     done
