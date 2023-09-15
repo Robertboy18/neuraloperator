@@ -66,7 +66,7 @@ default: &DEFAULT
       use: False
       init_modes: 6
       buffer_modes: 5
-      grad_explained_ratio_threshold: 0.999
+      grad_explained_ratio_threshold: 0.99
       max_iter: 1
       grad_max_iter: 10
     
