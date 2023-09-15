@@ -57,7 +57,7 @@ class Paramaters:
             # optimizes for powers of two
             if self.dataset_name == 'SmallDarcy':
                 self.sub_list = paramaters.dataset.SmallDarcy  # cannot do incremental resolution
-            elif self.dataset_name == 'Darcy':
+            elif self.dataset_name == 'Darcy' or self.dataset_name=='Re5000':
                 self.sub_list = paramaters.dataset.Darcy
             elif self.dataset_name == "Burgers":
                 self.sub_list = paramaters.dataset.Burgers
@@ -82,7 +82,7 @@ class Paramaters:
             return self.small_darcy_sub_to_res(sub)
         if self.dataset_name == 'Burgers':
             return self.burger_sub_to_res(sub)
-        elif self.dataset_name == 'Darcy':
+        elif self.dataset_name == 'Darcy' or self.dataset_name=='Re5000':
             return self.darcy_sub_to_res(sub)
         elif self.dataset_name == 'NavierStokes':
             return self.navier_sub_to_res(sub)
@@ -99,7 +99,7 @@ class Paramaters:
 
     def darcy_sub_to_res(self, sub):
         # Calculate resolution based on sub for the Darcy dataset
-        return int(((241 - 1) / sub) + 1)
+        return int((128 / sub))
 
     def navier_sub_to_res(self, sub, resolution=512):
         # Calculate resolution based on sub for the NavierStokes dataset
@@ -170,13 +170,13 @@ class Paramaters:
         elif self.dataset_name == 'SmallDarcy':
             x = x[:, :, ::self.current_sub, ::self.current_sub]
             y = y[:, ::self.current_sub, ::self.current_sub]
-        elif self.dataset_name == 'Darcy':
-            x = x[:, :, :, ::self.current_sub]
-            y = y[:, :, :, ::self.current_sub]
+        elif self.dataset_name == 'Darcy' or self.dataset_name=='Re5000':
+            x = x[:, :, ::self.current_sub, ::self.current_sub]
+            y = y[:, :, ::self.current_sub, ::self.current_sub]
         elif self.dataset_name == 'NavierStokes':
             x = x[:, :, ::self.current_sub, ::self.current_sub]
             y = y[:, :, ::self.current_sub, ::self.current_sub]
         elif self.dataset_name == 'NavierStokesHighFrequency':
             x = x[:, ::self.current_sub, ::self.current_sub]
             y = y[:, ::self.current_sub, ::self.current_sub]
-        return x, y, self.current_index
+        return x, y, self.current_sub

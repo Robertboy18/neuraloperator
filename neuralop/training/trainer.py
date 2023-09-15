@@ -133,7 +133,7 @@ class Trainer:
                     y = y.to(self.device)
                 
                 #print("train shape: ", x.shape, y.shape)
-
+                self.index = 1
                 if self.incremental_resolution:
                     x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
                                 
@@ -142,7 +142,7 @@ class Trainer:
                     regularizer.reset()
 
                 if self.dataset_name == 'Re5000':
-                    out = model(x).reshape(50, 1, 128, 128)
+                    out = model(x).reshape(50, 1, int(128 // self.index), int(128 // self.index))
                 else:
                     out = model(x)
                 
