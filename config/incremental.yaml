@@ -83,7 +83,7 @@ default: &DEFAULT
       SmallDarcy: [1]
       Darcy: [4, 2, 1]
       Burgers: [256, 64, 16, 8, 1]
-      NavierStokes: [8, 4, 2, 1]
+      NavierStokes: [4]
       Vorticity: [128, 64, 32, 16, 1]
 
   # Weights and biases

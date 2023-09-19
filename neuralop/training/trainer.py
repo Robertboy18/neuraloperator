@@ -111,7 +111,7 @@ class Trainer:
         
         if self.incremental_loss_gap or self.incremental_grad:
             print("Model is initially using {} number of modes".format(model.incremental_n_modes))
-        S = 256
+        S = 128
         for epoch in range(self.n_epochs):
             avg_loss = 0
             avg_lasso_loss = 0
@@ -267,7 +267,7 @@ class Trainer:
         errors = {f'{log_prefix}_{loss_name}':0 for loss_name in loss_dict.keys()}
         batch_size=10
         n_samples = 0
-        S = 256
+        S = 128
         with torch.no_grad():
             for it, sample in enumerate(data_loader):
                 if self.dataset_name == 'Burgers' or self.dataset_name == 'Re5000':
