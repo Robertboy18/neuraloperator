@@ -88,7 +88,7 @@ class Trainer:
 
         if not isinstance(test_loaders, dict):
             test_loaders = dict(test=test_loaders)
-        batch_size = 10
+        batch_size = 1
         if self.verbose:
             print(f'Training on {n_train} samples')
             print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
@@ -265,7 +265,7 @@ class Trainer:
             is_logger = True 
 
         errors = {f'{log_prefix}_{loss_name}':0 for loss_name in loss_dict.keys()}
-        batch_size=10
+        batch_size=1
         n_samples = 0
         S = 256
         with torch.no_grad():
