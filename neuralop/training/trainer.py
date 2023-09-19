@@ -111,7 +111,7 @@ class Trainer:
         
         if self.incremental_loss_gap or self.incremental_grad:
             print("Model is initially using {} number of modes".format(model.incremental_n_modes))
-
+        S = 256
         for epoch in range(self.n_epochs):
             avg_loss = 0
             avg_lasso_loss = 0
@@ -126,8 +126,8 @@ class Trainer:
                 x, y = self.patcher.patch(x, y)
                 
                 if self.dataset_name == 'Re5000':
-                    x = x.to(self.device).view(batch_size, 1, 128, 128)
-                    y = y.to(self.device).view(batch_size, 1, 128, 128)   
+                    x = x.to(self.device).view(batch_size, 1, S, S)
+                    y = y.to(self.device).view(batch_size, 1, S, S)   
                 else:      
                     x = x.to(self.device)
                     y = y.to(self.device)
@@ -142,7 +142,7 @@ class Trainer:
                     regularizer.reset()
 
                 if self.dataset_name == 'Re5000':
-                    out = model(x).reshape(batch_size, 1, int(128 // self.index), int(128 // self.index))
+                    out = model(x).reshape(batch_size, 1, int(S // self.index), int(S // self.index))
                 else:
                     out = model(x)
                 
@@ -267,6 +267,7 @@ class Trainer:
         errors = {f'{log_prefix}_{loss_name}':0 for loss_name in loss_dict.keys()}
         batch_size=10
         n_samples = 0
+        S = 256
         with torch.no_grad():
             for it, sample in enumerate(data_loader):
                 if self.dataset_name == 'Burgers' or self.dataset_name == 'Re5000':
@@ -279,14 +280,14 @@ class Trainer:
                 x, y = self.patcher.patch(x, y)
                 
                 if self.dataset_name == 'Re5000':
-                    x = x.to(self.device).view(batch_size, 1, 128, 128)
-                    y = y.to(self.device).view(batch_size, 1, 128, 128)
+                    x = x.to(self.device).view(batch_size, 1, S, S)
+                    y = y.to(self.device).view(batch_size, 1, S, S)
                 else:
                     y = y.to(self.device)
                     x = x.to(self.device)
                 
                 if self.dataset_name == 'Re5000':
-                    out = model(x).reshape(batch_size, 1, 128, 128)
+                    out = model(x).reshape(batch_size, 1, S, S)
                 else:
                     out = model(x)
                         
