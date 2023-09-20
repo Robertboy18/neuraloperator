@@ -58,7 +58,7 @@ class Paramaters:
             if self.dataset_name == 'SmallDarcy':
                 self.sub_list = paramaters.dataset.SmallDarcy  # cannot do incremental resolution
             elif self.dataset_name == 'Darcy' or self.dataset_name=='Re5000':
-                self.sub_list = [4] #paramaters.dataset.Darcy
+                self.sub_list = [2] #paramaters.dataset.Darcy
             elif self.dataset_name == "Burgers":
                 self.sub_list = paramaters.dataset.Burgers
             elif self.dataset_name == "NavierStokes":
