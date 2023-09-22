@@ -12,7 +12,7 @@ from tltorch.factorized_tensors.core import FactorizedTensor
 
 einsum_symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-def _contract_dense(x, weight, separable=False):
+def _contract_dense(x, weight, separable=False, train_resolution=32):
     order = tl.ndim(x)
     # batch-size, in_channels, x, y...
     x_syms = list(einsum_symbols[:order])
@@ -33,7 +33,7 @@ def _contract_dense(x, weight, separable=False):
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
     if x.shape[-1] < weight.shape[-1]:
-        weight = weight[..., :x.shape[-1]]
+        weight = weight[..., train_resolution]
     #print(x.shape, weight.shape)
     return tl.einsum(eq, x, weight)
 
@@ -295,7 +295,7 @@ class FactorizedSpectralConv(nn.Module):
             self.weight_slices = [slice(None)]*2 + [slice(None, n//2) for n in self._incremental_n_modes]
             self.half_n_modes = [m//2 for m in self._incremental_n_modes]
 
-    def forward(self, x, indices=0):
+    def forward(self, x, indices=0, resolution=32):
         """Generic forward pass for the Factorized Spectral Conv
 
         Parameters
@@ -329,7 +329,7 @@ class FactorizedSpectralConv(nn.Module):
             
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
             #print(indices, i, out_fft.shape, idx_tuple, x.shape, self._get_weight(indices + i).shape)
-            out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(indices + i), separable=self.separable)
+            out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(indices + i), separable=self.separable, train_resolution=resolution)
 
         x = torch.fft.irfftn(out_fft, s=(mode_sizes), norm=self.fft_norm)
 

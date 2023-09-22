@@ -142,7 +142,7 @@ class Trainer:
                     regularizer.reset()
 
                 if self.dataset_name == 'Re5000':
-                    out = model(x).reshape(batch_size, 1, int(S // self.index), int(S // self.index))
+                    out = model(x, resolution=int(S // self.index)).reshape(batch_size, 1, int(S // self.index), int(S // self.index))
                 else:
                     out = model(x)
                 
@@ -287,7 +287,7 @@ class Trainer:
                     x = x.to(self.device)
                 
                 if self.dataset_name == 'Re5000':
-                    out = model(x).reshape(batch_size, 1, S, S)
+                    out = model(x, resolution=int(S // self.index)).reshape(batch_size, 1, S, S)
                 else:
                     out = model(x)
                         
