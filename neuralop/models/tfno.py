@@ -194,7 +194,7 @@ class FNO(nn.Module):
         self.projection = Projection(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=projection_channels,
                                      non_linearity=non_linearity, n_dim=self.n_dim)
 
-    def forward(self, x):
+    def forward(self, x, resolution):
         """TFNO's forward pass
         """
         x = self.lifting(x)
@@ -210,7 +210,7 @@ class FNO(nn.Module):
                 if self.norm is not None:
                     x = self.norm[i](x)
 
-            x_fno = self.convs[i](x)
+            x_fno = self.convs[i](x, resolution=resolution)
 
             if not self.preactivation and self.norm is not None:
                 x_fno = self.norm[i](x_fno)

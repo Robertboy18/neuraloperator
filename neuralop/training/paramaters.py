@@ -49,7 +49,7 @@ class Paramaters:
         if self.incremental_resolution:
             # incremental resolution
             paramaters_resolution = paramaters.incremental_resolution
-            self.epoch_gap = paramaters_resolution.epoch_gap
+            self.epoch_gap = 1 #paramaters_resolution.epoch_gap
             self.new_index = config.checkpoint.sub_list_index
 
             # Determine the sub_list based on the dataset_name

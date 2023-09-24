@@ -32,8 +32,15 @@ def _contract_dense(x, weight, separable=False, train_resolution=32):
 
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
+    previous_shape = 1
     if x.shape[-1] < weight.shape[-1]:
-        weight = weight[..., train_resolution]
+        #print(x.shape, weight.shape, train_resolution)
+        weight = weight[:, :, :train_resolution, :x.shape[-1]]
+    previous_shape = x.shape[-1]
+    test_resolution = 128
+    if train_resolution < test_resolution:
+        weight = weight[:, :, :train_resolution, :previous_shape]
+        #print(train_resolution, previous_shape, weight.shape)
     #print(x.shape, weight.shape)
     return tl.einsum(eq, x, weight)
 
@@ -295,7 +302,7 @@ class FactorizedSpectralConv(nn.Module):
             self.weight_slices = [slice(None)]*2 + [slice(None, n//2) for n in self._incremental_n_modes]
             self.half_n_modes = [m//2 for m in self._incremental_n_modes]
 
-    def forward(self, x, indices=0, resolution=32):
+    def forward(self, x, indices=0, resolution1=32):
         """Generic forward pass for the Factorized Spectral Conv
 
         Parameters
@@ -318,7 +325,6 @@ class FactorizedSpectralConv(nn.Module):
         x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=fft_dims)
 
         out_fft = torch.zeros([batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.cfloat)
-        
         # We contract all corners of the Fourier coefs
         # Except for the last mode: there, we take all coefs as redundant modes were already removed
         mode_indexing = [((None, m), (-m, None)) for m in self.half_n_modes[:-1]] + [((None, self.half_n_modes[-1]), )]
@@ -329,7 +335,7 @@ class FactorizedSpectralConv(nn.Module):
             
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
             #print(indices, i, out_fft.shape, idx_tuple, x.shape, self._get_weight(indices + i).shape)
-            out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(indices + i), separable=self.separable, train_resolution=resolution)
+            out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(indices + i), separable=self.separable, train_resolution=resolution1)
 
         x = torch.fft.irfftn(out_fft, s=(mode_sizes), norm=self.fft_norm)
 
@@ -367,8 +373,8 @@ class SubConv2d(nn.Module):
         self.main_conv = main_conv
         self.indices = indices
     
-    def forward(self, x):
-        return self.main_conv.forward(x, self.indices)
+    def forward(self, x, resolution):
+        return self.main_conv.forward(x, self.indices, resolution1=resolution)
 
 
 class FactorizedSpectralConv1d(FactorizedSpectralConv):
@@ -389,7 +395,7 @@ class FactorizedSpectralConv1d(FactorizedSpectralConv):
 
 
 class FactorizedSpectralConv2d(FactorizedSpectralConv):
-    def forward(self, x, indices=0):
+    def forward(self, x, indices=0, resolution=32):
         batchsize, channels, height, width = x.shape
 
         x = torch.fft.rfft2(x.float(), norm=self.fft_norm)
@@ -399,10 +405,10 @@ class FactorizedSpectralConv2d(FactorizedSpectralConv):
 
         # upper block (truncate high freq)
         out_fft[:, :, :self.half_n_modes[0], :self.half_n_modes[1]] = self._contract(x[:, :, :self.half_n_modes[0], :self.half_n_modes[1]], 
-                                                                              self._get_weight(2*indices), separable=self.separable)
+                                                                              self._get_weight(2*indices), separable=self.separable, train_resolution=resolution)
         # Lower block
         out_fft[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1]] = self._contract(x[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1]],
-                                                                              self._get_weight(2*indices + 1), separable=self.separable)
+                                                                              self._get_weight(2*indices + 1), separable=self.separable, train_resolution=resolution)
 
         x = torch.fft.irfft2(out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm)
 
