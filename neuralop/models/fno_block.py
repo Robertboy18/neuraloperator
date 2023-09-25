@@ -34,13 +34,16 @@ def _contract_dense(x, weight, separable=False, train_resolution=32):
         weight = weight.to_tensor()
     previous_shape = 1
     if x.shape[-1] < weight.shape[-1]:
-        #print(x.shape, weight.shape, train_resolution)
+        print(x.shape, weight.shape, train_resolution)
         weight = weight[:, :, :train_resolution, :x.shape[-1]]
-    previous_shape = x.shape[-1]
+        previous_shape = x.shape[-1]
+    if x.shape[-1] == weight.shape[-1]:
+        previous_shape = x.shape[-1]
     test_resolution = 128
+    train_resolution = x.shape[-2]
     if train_resolution < test_resolution:
         weight = weight[:, :, :train_resolution, :previous_shape]
-        #print(train_resolution, previous_shape, weight.shape)
+        print(train_resolution, previous_shape, weight.shape)
     #print(x.shape, weight.shape)
     return tl.einsum(eq, x, weight)
 
