@@ -37,7 +37,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 1000
+    n_epochs: 50
     learning_rate: 1e-3
     training_loss: 'h1'
     weight_decay: 1e-4
@@ -76,7 +76,7 @@ default: &DEFAULT
       eps: 0.001
 
     incremental_resolution:
-      use: True
+      use: False
       epoch_gap: 10
 
     dataset:
