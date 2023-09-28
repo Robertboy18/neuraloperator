@@ -12,7 +12,8 @@ from tltorch.factorized_tensors.core import FactorizedTensor
 
 einsum_symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-def _contract_dense(x, weight, separable=False, train_resolution=32):
+previous_shape = 1
+def _contract_dense(x, weight, separable=False, train_resolution=32, mode = "train"):
     order = tl.ndim(x)
     # batch-size, in_channels, x, y...
     x_syms = list(einsum_symbols[:order])
@@ -32,19 +33,17 @@ def _contract_dense(x, weight, separable=False, train_resolution=32):
 
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
-    previous_shape = 1
-    if x.shape[-1] < weight.shape[-1]:
+    if x.shape[-1] < weight.shape[-1] and mode == "train":
         #print("Train ", x.shape, weight.shape, train_resolution)
-        weight = weight[:, :, :train_resolution, :train_resolution]
-        previous_shape = x.shape[-1]
-    if x.shape[-1] == weight.shape[-1]:
+        weight = weight[:, :, :train_resolution, :x.shape[-1]]
+        global previous_shape
         previous_shape = x.shape[-1]
     test_resolution = 128
-    train_resolution = x.shape[-2]
-    if train_resolution < test_resolution:
+    if train_resolution < test_resolution and mode == "test":
         #print("Test ", x.shape, weight.shape, train_resolution, previous_shape)
-        weight = weight[:, :, :train_resolution, :train_resolution]
-    #print(x.shape, weight.shape)
+        x = x[: , :, :train_resolution, :previous_shape]
+        weight = weight[:, :, :train_resolution, :previous_shape]
+        #print("Changed", x.shape, weight.shape)
     return tl.einsum(eq, x, weight)
 
 def _contract_dense_separable(x, weight, separable=True):
@@ -305,7 +304,7 @@ class FactorizedSpectralConv(nn.Module):
             self.weight_slices = [slice(None)]*2 + [slice(None, n//2) for n in self._incremental_n_modes]
             self.half_n_modes = [m//2 for m in self._incremental_n_modes]
 
-    def forward(self, x, indices=0, resolution1=32):
+    def forward(self, x, indices=0, resolution1=32, mode = "train"):
         """Generic forward pass for the Factorized Spectral Conv
 
         Parameters
@@ -318,15 +317,19 @@ class FactorizedSpectralConv(nn.Module):
         Returns
         -------
         tensorized_spectral_conv(x)
-        """
+        """    
         batchsize, channels, *mode_sizes = x.shape
         fft_size = list(mode_sizes)
-        fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficient
+        if mode == "test":
+            fft_size[-2] = resolution1
+            fft_size[-1] = resolution1//2 + 1
+        else:
+            fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficient
         
         #Compute Fourier coeffcients 
         fft_dims = list(range(-self.order, 0))
         x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=fft_dims)
-
+        
         out_fft = torch.zeros([batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.cfloat)
         # We contract all corners of the Fourier coefs
         # Except for the last mode: there, we take all coefs as redundant modes were already removed
@@ -334,11 +337,15 @@ class FactorizedSpectralConv(nn.Module):
 
         for i, boundaries in enumerate(itertools.product(*mode_indexing)):
             # Keep all modes for first 2 modes (batch-size and channels)
-            idx_tuple = [slice(None), slice(None)] + [slice(*b) for b in boundaries]
+            idx_tuple = [slice(None), slice(None)] + [slice(*b) for b in boundaries] #[128, 128]
+            #print("TUPLE", idx_tuple)
             
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
             #print(indices, i, out_fft.shape, idx_tuple, x.shape, self._get_weight(indices + i).shape)
-            out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(indices + i), separable=self.separable, train_resolution=resolution1)
+            #shape1 = list(self._contract(x[idx_tuple], self._get_weight(indices + i), separable=self.separable, train_resolution=resolution1, mode = mode).shape)
+            #print(shape1, idx_tuple, out_fft.shape)
+            #shape2 = list(out_fft[shape1].shape)
+            out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(indices + i), separable=self.separable, train_resolution=resolution1, mode = mode) #[32, 17]
 
         x = torch.fft.irfftn(out_fft, s=(mode_sizes), norm=self.fft_norm)
 
@@ -376,8 +383,8 @@ class SubConv2d(nn.Module):
         self.main_conv = main_conv
         self.indices = indices
     
-    def forward(self, x, resolution):
-        return self.main_conv.forward(x, self.indices, resolution1=resolution)
+    def forward(self, x, resolution, mode):
+        return self.main_conv.forward(x, self.indices, resolution1=resolution, mode=mode)
 
 
 class FactorizedSpectralConv1d(FactorizedSpectralConv):
