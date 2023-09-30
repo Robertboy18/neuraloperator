@@ -42,7 +42,7 @@ def _contract_dense(x, weight, separable=False, train_resolution=32, mode = "tra
     if train_resolution < test_resolution and mode == "test":
         #print("Test ", x.shape, weight.shape, train_resolution, previous_shape)
         x = x[: , :, :train_resolution, :previous_shape]
-        weight = weight[:, :, :32, :32]
+        weight = weight[:, :, :32, :previous_shape]
         #print("Changed", x.shape, weight.shape)
     return tl.einsum(eq, x, weight)
 
