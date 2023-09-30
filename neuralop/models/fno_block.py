@@ -323,8 +323,13 @@ class FactorizedSpectralConv(nn.Module):
         batchsize, channels, *mode_sizes = x.shape
         fft_size = list(mode_sizes)
         if mode == "test":
-            fft_size[-2] = resolution1
-            fft_size[-1] = resolution1//2 + 1
+            if resolution1 > 32:
+                resolution1 = 32
+                fft_size[-2] = resolution1
+                fft_size[-1] = resolution1
+            else:              
+                fft_size[-2] = resolution1
+                fft_size[-1] = resolution1//2 + 1
         else:
             fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficient
         
