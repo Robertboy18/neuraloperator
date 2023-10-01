@@ -41,10 +41,10 @@ def _contract_dense(x, weight, separable=False, train_resolution=32, mode = "tra
     test_resolution = 128
     if train_resolution < test_resolution and mode == "test":
         #print("Test ", x.shape, weight.shape, train_resolution, previous_shape)
-        if previous_shape > 32:
-            previous_shape = 32
-        x = x[: , :, :32, :previous_shape]
-        weight = weight[:, :, :32, :previous_shape]
+        #if previous_shape > 32:
+        #    previous_shape = 32
+        x = x[: , :, :train_resolution, :previous_shape]
+        weight = weight[:, :, :train_resolution, :previous_shape]
         #print("Changed", x.shape, weight.shape)
     return tl.einsum(eq, x, weight)
 
@@ -323,13 +323,13 @@ class FactorizedSpectralConv(nn.Module):
         batchsize, channels, *mode_sizes = x.shape
         fft_size = list(mode_sizes)
         if mode == "test":
-            if resolution1 > 32:
+            """if resolution1 > 32:
                 resolution1 = 32
                 fft_size[-2] = resolution1
                 fft_size[-1] = resolution1
-            else:              
-                fft_size[-2] = resolution1
-                fft_size[-1] = resolution1//2 + 1
+            else:          """    
+            fft_size[-2] = resolution1
+            fft_size[-1] = resolution1//2 + 1
         else:
             fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficient
         
