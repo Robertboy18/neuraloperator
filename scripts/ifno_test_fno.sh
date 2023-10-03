@@ -1,8 +1,8 @@
 TASK_NAME=ifno_batch_script_re5000
 
-for BASE_LR in 1e-3
+for BASE_LR in 1e-4 1e-3
 do
-    for MODES in 8
+    for MAX_LR in 1e-2 1e-3
     do
         for EPOCH in 1000
         do
@@ -36,7 +36,7 @@ do
                     cd /workspace/markov_neural_operator; \
                     cd scripts; \
                     git checkout robert-test; \
-                    python NS_fno_baseline-trial.py;\
+                    python NS_fno_baseline-trial.py --opt.mode="triangular2" --opt.base_lr=$BASE_LR --opt.max_lr=$MAX_LR;\
                 '"     
         done    
     done
