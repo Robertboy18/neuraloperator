@@ -287,7 +287,7 @@ class Trainer:
                     x = x.to(self.device)
                 
                 if self.dataset_name == 'Re5000':
-                    out = model(x, resolution=int(S // self.index),  mode = "test").reshape(batch_size, 1, S, S)
+                    out = model(x, resolution=int(S // (self.index-1)),  mode = "test").reshape(batch_size, 1, S, S)
                 else:
                     out = model(x)
                         
