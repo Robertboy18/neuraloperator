@@ -1,8 +1,8 @@
 TASK_NAME=ifno_batch_script_re5000
 
-for BASE_LR in 1e-4 1e-3
+for BASE_LR in 1e-4
 do
-    for MAX_LR in 1e-2 1e-3
+    for MAX_LR in 1e-2
     do
         for EPOCH in 1000
         do
