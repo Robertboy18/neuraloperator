@@ -301,7 +301,7 @@ class Trainer:
                         img = out
                     else:
                         img = out.squeeze()[0]
-                    #wandb.log({f'image_{log_prefix}': wandb.Image(img.unsqueeze(-1).cpu().numpy())}, commit=False)
+                    wandb.log({f'image_{log_prefix}': wandb.Image(img.unsqueeze(-1).cpu().numpy())}, commit=False)
                 
                 for loss_name, loss in loss_dict.items():
                     #print("LOSS", loss_name, loss(out, y).item(), out, y)
