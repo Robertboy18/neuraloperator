@@ -24,6 +24,7 @@ class Paramaters:
                 YamlConfig(
                     # Add the config path to the incremental config file
                     '/workspace/neuraloperator/config/incremental.yaml',
+                    #'/home/user/markov_neural_operator/scripts/config/incremental.yaml'
                     config_name='default'),
                 ArgparseConfig(
                     infer_types=True,
@@ -171,8 +172,16 @@ class Paramaters:
             x = x[:, :, ::self.current_sub, ::self.current_sub]
             y = y[:, ::self.current_sub, ::self.current_sub]
         elif self.dataset_name == 'Darcy' or self.dataset_name=='Re5000':
-            x = x[:, :, ::self.current_sub, ::self.current_sub]
-            y = y[:, :, ::self.current_sub, ::self.current_sub]
+            batchsize, channels, *mode_sizes = x.shape
+            s1 = (128 // self.current_sub)
+            mode_sizes[-1] = s1
+            mode_sizes[-2] = s1
+            x = torch.fft.rfftn(x.float(), norm="backward", dim=[-2, -1])
+            x = torch.fft.irfftn(x, s=(mode_sizes), norm="backward")
+            y = torch.fft.rfftn(y.float(), norm="backward", dim=[-2, -1])
+            y = torch.fft.irfftn(y, s=(mode_sizes), norm="backward")
+            #x = x[:, :, ::self.current_sub, ::self.current_sub]
+            #y = y[:, :, ::self.current_sub, ::self.current_sub]
         elif self.dataset_name == 'NavierStokes':
             x = x[:, :, ::self.current_sub, ::self.current_sub]
             y = y[:, :, ::self.current_sub, ::self.current_sub]
