@@ -185,7 +185,7 @@ class Trainer:
 
             epoch_train_time = default_timer() - t1
             del x, y
-            T = 1
+            T = 400
             if self.dataset_name == 'Re5000':
                 train_err/= (n_train*T)
             else:
@@ -308,10 +308,10 @@ class Trainer:
                     errors[f'{log_prefix}_{loss_name}'] += loss(out, y).item()
 
         del x, y, out
-        T = 1
+        T = 400
         for key in errors.keys():
             if self.dataset_name == 'Re5000':
-                errors[key] /= (n_samples*1)
+                errors[key] /= (n_samples*T)
             else:
                 errors[key] /= n_samples
 
