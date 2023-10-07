@@ -226,7 +226,7 @@ class FNO(nn.Module):
             non_linearity=non_linearity,
         )
 
-    def forward(self, x, output_shape=None, **kwargs):
+    def forward(self, x, output_shape=None, resolution = 32, mode = "train", **kwargs):
         """TFNO's forward pass
 
         Parameters
@@ -251,7 +251,7 @@ class FNO(nn.Module):
             x = self.domain_padding.pad(x)
 
         for layer_idx in range(self.n_layers):
-            x = self.fno_blocks(x, layer_idx, output_shape=output_shape[layer_idx])
+            x = self.fno_blocks(x, layer_idx, output_shape=output_shape[layer_idx], resolution = resolution, mode = mode)
 
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)

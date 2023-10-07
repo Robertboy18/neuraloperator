@@ -23,7 +23,7 @@ class Paramaters:
             [
                 YamlConfig(
                     # Add the config path to the incremental config file
-                    '/workspace/neuraloperator/config/incremental.yaml',
+                    '/workspace/markov_neural_operator/scripts/config/incremental.yaml',
                     #'/home/user/markov_neural_operator/scripts/config/incremental.yaml'
                     config_name='default'),
                 ArgparseConfig(

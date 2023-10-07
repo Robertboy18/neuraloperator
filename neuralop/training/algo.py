@@ -1,5 +1,5 @@
 import torch
-from .paramaters import Paramaters
+from .parameters import Paramaters
 
 
 class Incremental(Paramaters):

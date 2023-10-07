@@ -208,7 +208,7 @@ class Trainer:
                         out = self.model(**sample)
                 else:
                     print(S, self.index)
-                    out = self.model(**sample, resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, int(S // self.index), int(S // self.index))
+                    out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, int(S // self.index), int(S // self.index))
 
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)

@@ -428,7 +428,7 @@ class SpectralConv(BaseSpectralConv):
             )
 
     def forward(
-        self, x: torch.Tensor, indices=0, output_shape: Optional[Tuple[int]] = None, resolution1=32, mode="train"
+        self, x: torch.Tensor, indices=0, output_shape: Optional[Tuple[int]] = None, resolution=32, mode="train"
     ):
         """Generic forward pass for the Factorized Spectral Conv
 
@@ -453,15 +453,15 @@ class SpectralConv(BaseSpectralConv):
                 fft_size[-1] = resolution1
             else:          """
             inc_height, inc_width = self.incremental_n_modes
-            if inc_height > resolution1 or inc_width > resolution1:
-                self.incremental_n_modes = (resolution1, resolution1)
+            if inc_height > resolution or inc_width > resolution:
+                self.incremental_n_modes = (resolution, resolution)
                 print(self.incremental_n_modes)
             # fft_size[-2] = resolution1
             # fft_size[-1] = resolution1//2 + 1
         else:
             inc_height, inc_width = self.incremental_n_modes
-            if inc_height > resolution1 or inc_width > resolution1:
-                self.incremental_n_modes = (resolution1, resolution1)
+            if inc_height > resolution or inc_width > resolution:
+                self.incremental_n_modes = (resolution, resolution)
                 print(self.incremental_n_modes)
 
             fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficie
