@@ -70,9 +70,19 @@ class Trainer:
                  log_output=log_output, 
                  use_distributed=use_distributed, 
                  verbose=verbose, incremental = False, incremental_loss_gap = False, incremental_resolution = False, dataset_name = None, save_interval=2, model_save_dir='./checkpoints')
+        
+        self.incremental_loss_gap = incremental_loss_gap
+        self.incremental_grad = incremental
+        self.incremental_resolution = incremental_resolution
+        self.incremental = self.incremental_loss_gap or self.incremental_grad
+        self.dataset_name = dataset_name
+        self.save_interval = save_interval
+        self.model_save_dir = model_save_dir
+        self.save = False
+        
         if self.incremental or self.incremental_resolution:
-                    self.incremental_scheduler = Incremental(model, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution, dataset_name = self.dataset_name)
-                    self.index = 0
+            self.incremental_scheduler = Incremental(model, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution, dataset_name = self.dataset_name)
+            self.index = 1
                     
         self.model = model
         self.n_epochs = n_epochs
@@ -90,14 +100,6 @@ class Trainer:
         self.use_distributed = use_distributed
         self.device = device
         self.amp_autocast = amp_autocast
-        self.incremental_loss_gap = incremental_loss_gap
-        self.incremental_grad = incremental
-        self.incremental_resolution = incremental_resolution
-        self.incremental = self.incremental_loss_gap or self.incremental_grad
-        self.dataset_name = dataset_name
-        self.save_interval = save_interval
-        self.model_save_dir = model_save_dir
-        self.save = False
         
         if self.callbacks:
             self.callbacks.on_init_end(model=model, 
@@ -172,17 +174,19 @@ class Trainer:
                         y = y.to(self.device)
                 
                     self.index = 1
+                    print(self.incremental_resolution)
                     if self.incremental_resolution:
+                        print("Enter loop")
                         x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
-                    sample['x'] = x
-                    sample['y'] = y                    
+                    sample[0] = x
+                    sample[1] = y  
                     self.callbacks.on_batch_start(idx=idx, sample=sample)
 
                 # Decide what to do about logging later when we decide on batch naming conventions
                 '''if epoch == 0 and idx == 0 and self.verbose and is_logger:
                     print(f'Training on raw inputs of size {x.shape=}, {y.shape=}')'''
 
-                y = sample['y']
+                y = sample[1]
 
                 # load everything from the batch onto self.device if 
                 # no callback overrides default load to device
@@ -190,10 +194,11 @@ class Trainer:
                 if self.override_load_to_device:
                     self.callbacks.on_load_to_device(sample=sample)
                 else:
-                    for k,v in sample.items():
-                        if hasattr(v, 'to'):
-                            sample[k] = v.to(self.device)
+                    for idx in range(len(sample)):
+                        if hasattr(sample[idx], 'to'):
+                            sample[idx] = sample[idx].to(self.device)
 
+                print(optimizer)
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
@@ -202,7 +207,8 @@ class Trainer:
                     with amp.autocast(enabled=True):
                         out = self.model(**sample)
                 else:
-                    out = self.model(**sample, resolution =int(S // self.index), mode = "train").reshape(batch_size, 1, int(S // self.index), int(S // self.index))
+                    print(S, self.index)
+                    out = self.model(**sample, resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, int(S // self.index), int(S // self.index))
 
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
@@ -315,12 +321,12 @@ class Trainer:
                     else:
                         y = y.to(self.device)
                         x = x.to(self.device)
-                    
-                    sample['x'] = x
-                    sample['y'] = y
+                
+                    sample[0] = x
+                    sample[1] = y
                     self.callbacks.on_val_batch_start(idx=idx, sample=sample)
                 
-                y = sample['y']
+                y = sample[1]
                 n_samples += y.size(0)
 
                 # load everything from the batch onto self.device if 
@@ -329,9 +335,9 @@ class Trainer:
                 if self.override_load_to_device:
                     self.callbacks.on_load_to_device(sample=sample)
                 else:
-                    for k,v in sample.items():
-                        if hasattr(v, 'to'):
-                            sample[k] = v.to(self.device)
+                    for idx in range(len(sample)):
+                        if hasattr(sample[idx], 'to'):
+                            sample[idx] = sample[idx].to(self.device)
 
                 out = self.model(**sample)
 
