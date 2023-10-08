@@ -29,7 +29,7 @@ do
                     pip install -e . ; \
                     cp /ngc_workspace/jiawei/wandb_api_key.txt config/wandb_api_key.txt; \
                     cd /workspace/neuraloperator/scripts; \
-                    git checkout robert-turbulence; \
+                    git checkout robert-test-new-res; \
                     cd ..; \
                     cd ..; \
                     git clone https://github.com/Robertboy18/markov_neural_operator.git; \
