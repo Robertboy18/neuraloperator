@@ -369,7 +369,7 @@ class SpectralConv(BaseSpectralConv):
 
     def _get_weight(self, index):
         if self.incremental_n_modes is not None:
-            return self.weight[index][self.weight_slices[index]]
+            return self.weight[index][self.weight_slices[index%2]]
         else:
             return self.weight[index]
 
@@ -398,7 +398,7 @@ class SpectralConv(BaseSpectralConv):
             self.weight_slices.append([slice(None)]*2 + [slice(None, n//2) for n in self._incremental_n_modes])
             # Keep last modes along height, first ones along width
             self.weight_slices.append([slice(None)]*2 + [slice(-self._incremental_n_modes[0]//2, None), slice(None, self._incremental_n_modes[1]//2)])
-            print(self.weight_slices)
+            #print(self.weight_slices)
             
             self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
 
@@ -455,14 +455,14 @@ class SpectralConv(BaseSpectralConv):
             inc_height, inc_width = self.incremental_n_modes
             if inc_height > resolution or inc_width > resolution:
                 self.incremental_n_modes = (resolution, resolution)
-                print(self.incremental_n_modes)
+                #print(self.incremental_n_modes)
             # fft_size[-2] = resolution1
             # fft_size[-1] = resolution1//2 + 1
         else:
             inc_height, inc_width = self.incremental_n_modes
             if inc_height > resolution or inc_width > resolution:
                 self.incremental_n_modes = (resolution, resolution)
-                print(self.incremental_n_modes)
+                #print(self.incremental_n_modes)
 
             fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficie
         # Compute Fourier coeffcients

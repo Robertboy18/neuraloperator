@@ -224,7 +224,8 @@ class SimpleWandBLoggerCallback(Callback):
     
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
-        self._update_state_dict(n_train = len(self.state_dict['train_loader'].dataset))
+        #print(self.state_dict.keys())
+        self._update_state_dict(n_train = 36000)
     
     def on_train_start(self, **kwargs):
         self._update_state_dict(**kwargs)

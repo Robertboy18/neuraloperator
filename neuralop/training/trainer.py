@@ -174,9 +174,7 @@ class Trainer:
                         y = y.to(self.device)
                 
                     self.index = 1
-                    print(self.incremental_resolution)
                     if self.incremental_resolution:
-                        print("Enter loop")
                         x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
                     sample[0] = x
                     sample[1] = y  
@@ -185,7 +183,22 @@ class Trainer:
                 # Decide what to do about logging later when we decide on batch naming conventions
                 '''if epoch == 0 and idx == 0 and self.verbose and is_logger:
                     print(f'Training on raw inputs of size {x.shape=}, {y.shape=}')'''
-
+                """if self.dataset_name == 'Burgers' or self.dataset_name == 'Re5000':
+                    x, y = sample[0], sample[1]
+                else:
+                    x, y = sample['x'], sample['y']
+                if self.dataset_name == 'Re5000':
+                    x = x.to(self.device).view(batch_size, 1, S, S)
+                    y = y.to(self.device).view(batch_size, 1, S, S)
+                else:      
+                    x = x.to(self.device)
+                    y = y.to(self.device)
+                self.index = 1
+                if self.incremental_resolution:
+                    x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
+                sample[0] = x
+                sample[1] = y"""  
+                
                 y = sample[1]
 
                 # load everything from the batch onto self.device if 
@@ -198,7 +211,6 @@ class Trainer:
                         if hasattr(sample[idx], 'to'):
                             sample[idx] = sample[idx].to(self.device)
 
-                print(optimizer)
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
@@ -207,7 +219,6 @@ class Trainer:
                     with amp.autocast(enabled=True):
                         out = self.model(**sample)
                 else:
-                    print(S, self.index)
                     out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, int(S // self.index), int(S // self.index))
 
                 if self.callbacks:
@@ -229,7 +240,7 @@ class Trainer:
                                 loss += training_loss(**out, **sample)
                     else:
                         if isinstance(out, torch.Tensor):
-                            loss = training_loss(out.float(), **sample)
+                            loss = training_loss(out.float(), sample[1])
                         elif isinstance(out, dict):
                             loss += training_loss(**out, **sample)
                 
@@ -273,9 +284,8 @@ class Trainer:
                     
                 if self.incremental and epoch % self.log_test_interval == 0:
                     print("Model is currently using {} number of modes".format(self.model.convs.incremental_n_modes))
-
-                for loader_name, loader in test_loaders.items():
-                    _ = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                
+                _ = self.evaluate(eval_losses, test_loaders)
 
                 if self.callbacks:
                     self.callbacks.on_val_end()
@@ -315,6 +325,8 @@ class Trainer:
             for idx, sample in enumerate(data_loader):
                 
                 if self.callbacks:
+                    x = sample[0]
+                    y = sample[1]
                     if self.dataset_name == 'Re5000':
                         x = x.to(self.device).view(batch_size, 1, S, S)
                         y = y.to(self.device).view(batch_size, 1, S, S)
@@ -325,7 +337,17 @@ class Trainer:
                     sample[0] = x
                     sample[1] = y
                     self.callbacks.on_val_batch_start(idx=idx, sample=sample)
-                
+                """x = sample[0]
+                y = sample[1]
+                if self.dataset_name == 'Re5000':
+                    x = x.to(self.device).view(batch_size, 1, S, S)
+                    y = y.to(self.device).view(batch_size, 1, S, S)
+                else:
+                    y = y.to(self.device)
+                    x = x.to(self.device)
+            
+                sample[0] = x
+                sample[1] = y"""
                 y = sample[1]
                 n_samples += y.size(0)
 
@@ -338,8 +360,7 @@ class Trainer:
                     for idx in range(len(sample)):
                         if hasattr(sample[idx], 'to'):
                             sample[idx] = sample[idx].to(self.device)
-
-                out = self.model(**sample)
+                out = self.model(sample[0], resolution = int(S // self.index), mode = "test").reshape(batch_size, 1, 128, 128)
 
                 if self.callbacks:
                     self.callbacks.on_before_val_loss(out=out)
@@ -352,7 +373,7 @@ class Trainer:
                             val_loss = self.callbacks.compute_training_loss(**out, **sample)
                     else:
                         if isinstance(out, torch.Tensor):
-                            val_loss = loss(out, **sample).item()
+                            val_loss = loss(out, sample[1]).item()
                         elif isinstance(out, dict):
                             val_loss = loss(out, **sample).item()
 
