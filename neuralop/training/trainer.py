@@ -360,7 +360,7 @@ class Trainer:
                     for idx in range(len(sample)):
                         if hasattr(sample[idx], 'to'):
                             sample[idx] = sample[idx].to(self.device)
-                out = self.model(sample[0], resolution = int(S // self.index), mode = "test").reshape(batch_size, 1, 128, 128)
+                out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, 128, 128)
 
                 if self.callbacks:
                     self.callbacks.on_before_val_loss(out=out)
