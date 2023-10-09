@@ -19,10 +19,12 @@ do
                 --team nvr-aialgo \
                 --port 6006 --port 1234 --port 8888 \
                 --commandline "bash -c '\
+                    /usr/bin/python -m pip install --upgrade pip; \
                     sh /ngc_workspace/jiawei/set_wandb.sh; \
                     pip install configmypy zarr mpi4py; \
                     pip install -U tensorly; \
                     pip install -U tensorly-torch ; \
+                    pip install torch_harmonics;\
                     cd /workspace; \    
                     git clone https://github.com/Robertboy18/neuraloperator.git; \
                     cd /workspace/neuraloperator; \
@@ -30,7 +32,6 @@ do
                     cp /ngc_workspace/jiawei/wandb_api_key.txt config/wandb_api_key.txt; \
                     cd /workspace/neuraloperator/scripts; \
                     git checkout robert-test-new-res; \
-                    pip install torch_harmonics; \
                     cd ..; \
                     cd ..; \
                     git clone https://github.com/Robertboy18/markov_neural_operator.git; \
