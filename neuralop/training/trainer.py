@@ -386,7 +386,7 @@ class Trainer:
 
         for key in errors.keys():
             if self.dataset_name == 'Re5000':
-                errors[key] /= (n_samples * 400)
+                errors[key] /= (n_samples * 1)
             else:
                 errors[key] /= n_samples
         

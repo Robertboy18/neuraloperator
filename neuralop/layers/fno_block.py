@@ -188,13 +188,13 @@ class FNOBlocks(nn.Module):
             for norm, embedding in zip(self.norm, embeddings):
                 norm.set_embedding(embedding)
 
-    def forward(self, x, index=0, output_shape=None, resolution=32, mode = "train"):
+    def forward(self, x, resolution, mode, index=0, output_shape=None):
         if self.preactivation:
-            return self.forward_with_preactivation(x, index, output_shape)
+            return self.forward_with_preactivation(x, index, output_shape, resolution, mode)
         else:
-            return self.forward_with_postactivation(x, index, output_shape, resolution, mode)
+            return self.forward_with_postactivation(x, resolution, mode, index, output_shape)
 
-    def forward_with_postactivation(self, x, index=0, output_shape=None, resolution=32, mode="train"):
+    def forward_with_postactivation(self, x, resolution, mode, index=0, output_shape=None):
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
@@ -205,7 +205,7 @@ class FNOBlocks(nn.Module):
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
 
-        x_fno = self.convs(x, index, output_shape=output_shape, resolution=resolution, mode= mode)
+        x_fno = self.convs(x, resolution, mode, index, output_shape=output_shape)
 
         if self.norm is not None:
             x_fno = self.norm[self.n_norms * index](x_fno)

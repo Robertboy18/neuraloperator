@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..layers.spectral_convolution import SpectralConv
-from ..layers.spherical_convolution import SphericalConv
+#from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
 from ..layers.mlp import MLP
@@ -226,7 +226,7 @@ class FNO(nn.Module):
             non_linearity=non_linearity,
         )
 
-    def forward(self, x, output_shape=None, resolution = 32, mode = "train", **kwargs):
+    def forward(self, x, resolution, mode, output_shape=None, **kwargs):
         """TFNO's forward pass
 
         Parameters
@@ -251,7 +251,7 @@ class FNO(nn.Module):
             x = self.domain_padding.pad(x)
 
         for layer_idx in range(self.n_layers):
-            x = self.fno_blocks(x, layer_idx, output_shape=output_shape[layer_idx], resolution = resolution, mode = mode)
+            x = self.fno_blocks(x, resolution, mode, layer_idx, output_shape=output_shape[layer_idx])
 
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)

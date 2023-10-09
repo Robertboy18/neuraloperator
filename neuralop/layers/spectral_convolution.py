@@ -428,7 +428,7 @@ class SpectralConv(BaseSpectralConv):
             )
 
     def forward(
-        self, x: torch.Tensor, indices=0, output_shape: Optional[Tuple[int]] = None, resolution=32, mode="train"
+        self, x: torch.Tensor, resolution, mode, indices=0, output_shape: Optional[Tuple[int]] = None
     ):
         """Generic forward pass for the Factorized Spectral Conv
 
@@ -446,6 +446,8 @@ class SpectralConv(BaseSpectralConv):
         batchsize, channels, *mode_sizes = x.shape
 
         fft_size = list(mode_sizes)
+        #print("Choice =", mode)
+        #print("Incremental modes", self.incremental_n_modes)
         if mode == "test":
             """if resolution1 > 32:
                 resolution1 = 32
@@ -455,14 +457,20 @@ class SpectralConv(BaseSpectralConv):
             inc_height, inc_width = self.incremental_n_modes
             if inc_height > resolution or inc_width > resolution:
                 self.incremental_n_modes = (resolution, resolution)
-                #print(self.incremental_n_modes)
-            # fft_size[-2] = resolution1
-            # fft_size[-1] = resolution1//2 + 1
+                print("Model is using Testing1", self.incremental_n_modes)
+            elif inc_height <= resolution or inc_width <= resolution:
+                if resolution < self.n_modes[0]:
+                    self.incremental_n_modes = (resolution, resolution)
+                    print("Model is using Testing2", self.incremental_n_modes)
+                else:
+                    self.incremental_n_modes = (self.n_modes[0], self.n_modes[1])
+                    print("Model is using Testing3", self.incremental_n_modes)
         else:
             inc_height, inc_width = self.incremental_n_modes
-            if inc_height > resolution or inc_width > resolution:
-                self.incremental_n_modes = (resolution, resolution)
-                #print(self.incremental_n_modes)
+            self.incremental_n_modes = (resolution, resolution)
+            #print("Resolution", resolution, self.incremental_n_modes)
+            #print(self.incremental_n_modes)
+            #print(self.incremental_n_modes)
 
             fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficie
         # Compute Fourier coeffcients
@@ -560,8 +568,8 @@ class SubConv(nn.Module):
         self.main_conv = main_conv
         self.indices = indices
 
-    def forward(self, x, **kwargs):
-        return self.main_conv.forward(x, self.indices, **kwargs)
+    def forward(self, x, resolution, mode, **kwargs):
+        return self.main_conv.forward(x, resolution, mode, self.indices, **kwargs)
 
     def transform(self, x, **kwargs):
         return self.main_conv.transform(x, self.indices, **kwargs)
