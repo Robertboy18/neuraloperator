@@ -220,7 +220,7 @@ class Trainer:
                     with amp.autocast(enabled=True):
                         out = self.model(**sample)
                 else:
-                    self.index = 1
+                    #self.index = 1
                     out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, int(S // self.index), int(S // self.index))
 
                 if self.callbacks:
@@ -362,7 +362,7 @@ class Trainer:
                     for idx in range(len(sample)):
                         if hasattr(sample[idx], 'to'):
                             sample[idx] = sample[idx].to(self.device)
-                self.index = 1
+                #self.index = 1
                 out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, 128, 128)
 
                 if self.callbacks:
