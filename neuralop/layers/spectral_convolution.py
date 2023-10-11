@@ -466,7 +466,8 @@ class SpectralConv(BaseSpectralConv):
                     self.incremental_n_modes = (self.n_modes[0], self.n_modes[1])
                     print("Model is using Testing3", self.incremental_n_modes)
         else:
-            inc_height, inc_width = self.incremental_n_modes
+            pass
+            #inc_height, inc_width = self.incremental_n_modes
             #self.incremental_n_modes = (resolution, resolution)
             #print("Resolution", resolution, self.incremental_n_modes)
             #print(self.incremental_n_modes)
