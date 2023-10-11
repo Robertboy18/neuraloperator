@@ -159,6 +159,7 @@ class Trainer:
             train_err = 0.0
             batch_size = 10
             S = 128
+            self.index = 1
             for idx, sample in enumerate(train_loader):
 
                 if self.callbacks:
@@ -173,7 +174,7 @@ class Trainer:
                         x = x.to(self.device)
                         y = y.to(self.device)
                 
-                    self.index = 1
+                    #self.index = 1
                     if self.incremental_resolution:
                         x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
                     sample[0] = x
@@ -219,6 +220,7 @@ class Trainer:
                     with amp.autocast(enabled=True):
                         out = self.model(**sample)
                 else:
+                    self.index = 1
                     out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, int(S // self.index), int(S // self.index))
 
                 if self.callbacks:
@@ -360,6 +362,7 @@ class Trainer:
                     for idx in range(len(sample)):
                         if hasattr(sample[idx], 'to'):
                             sample[idx] = sample[idx].to(self.device)
+                self.index = 1
                 out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, 128, 128)
 
                 if self.callbacks:
