@@ -276,7 +276,7 @@ class Trainer:
                 train_err/= 400
             else:
                 train_err = train_err
-            avg_loss  /= (self.n_epochs)
+            avg_loss  /= (self.n_epochs*400)
             
             if epoch % self.log_test_interval == 0: 
 

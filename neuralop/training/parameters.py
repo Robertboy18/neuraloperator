@@ -176,14 +176,14 @@ class Paramaters:
             s1 = (128 // self.current_sub)
             mode_sizes[-1] = s1
             mode_sizes[-2] = s1
-            if s1 == 128:
+            """if s1 == 128:
                 x = torch.fft.rfftn(x.float(), norm="backward", dim=[-2, -1])
                 x = torch.fft.irfftn(x, s=(mode_sizes), norm="backward")
                 y = torch.fft.rfftn(y.float(), norm="backward", dim=[-2, -1])
                 y = torch.fft.irfftn(y, s=(mode_sizes), norm="backward")
-            else:
-                x = x[:, :, ::self.current_sub, ::self.current_sub]
-                y = y[:, :, ::self.current_sub, ::self.current_sub]
+            else:"""
+            x = x[:, :, ::self.current_sub, ::self.current_sub]
+            y = y[:, :, ::self.current_sub, ::self.current_sub]
         elif self.dataset_name == 'NavierStokes':
             x = x[:, :, ::self.current_sub, ::self.current_sub]
             y = y[:, :, ::self.current_sub, ::self.current_sub]
