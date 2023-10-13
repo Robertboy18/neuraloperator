@@ -50,7 +50,7 @@ class Paramaters:
         if self.incremental_resolution:
             # incremental resolution
             paramaters_resolution = paramaters.incremental_resolution
-            self.epoch_gap = 20 #paramaters_resolution.epoch_gap
+            self.epoch_gap = 10 #paramaters_resolution.epoch_gap
             self.new_index = config.checkpoint.sub_list_index
 
             # Determine the sub_list based on the dataset_name
@@ -176,12 +176,14 @@ class Paramaters:
             s1 = (128 // self.current_sub)
             mode_sizes[-1] = s1
             mode_sizes[-2] = s1
-            #x = torch.fft.rfftn(x.float(), norm="backward", dim=[-2, -1])
-            #x = torch.fft.irfftn(x, s=(mode_sizes), norm="backward")
-            #y = torch.fft.rfftn(y.float(), norm="backward", dim=[-2, -1])
-            #y = torch.fft.irfftn(y, s=(mode_sizes), norm="backward")
-            x = x[:, :, ::self.current_sub, ::self.current_sub]
-            y = y[:, :, ::self.current_sub, ::self.current_sub]
+            if s1 == 128:
+                x = torch.fft.rfftn(x.float(), norm="backward", dim=[-2, -1])
+                x = torch.fft.irfftn(x, s=(mode_sizes), norm="backward")
+                y = torch.fft.rfftn(y.float(), norm="backward", dim=[-2, -1])
+                y = torch.fft.irfftn(y, s=(mode_sizes), norm="backward")
+            else:
+                x = x[:, :, ::self.current_sub, ::self.current_sub]
+                y = y[:, :, ::self.current_sub, ::self.current_sub]
         elif self.dataset_name == 'NavierStokes':
             x = x[:, :, ::self.current_sub, ::self.current_sub]
             y = y[:, :, ::self.current_sub, ::self.current_sub]
