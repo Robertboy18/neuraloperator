@@ -114,7 +114,7 @@ class Trainer:
         
         
     def train(self, train_loader, test_loaders,
-            optimizer, scheduler, regularizer,
+            optimizer, scheduler=[None, None], regularizer=None,
               training_loss=None, eval_losses=None):
         
         """Trains the given model on the given datasets.
@@ -264,10 +264,13 @@ class Trainer:
                 if self.callbacks:
                     self.callbacks.on_batch_end()
 
-            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler.step(train_err)
+            if isinstance(scheduler[0], torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler[0].step(train_err)
             else:
-                scheduler.step()
+                if epoch >= 30:
+                    scheduler[1].step()
+                else:
+                    scheduler[0].step()
 
             epoch_train_time = default_timer() - t1            
 
