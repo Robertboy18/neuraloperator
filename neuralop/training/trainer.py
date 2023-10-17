@@ -253,6 +253,9 @@ class Trainer:
                 
                 loss.backward()
                 
+                if self.incremental:
+                    self.incremental_scheduler.step(loss.item(), epoch)
+                    
                 optimizer.step()
                 train_err += loss.item()
         
@@ -279,15 +282,14 @@ class Trainer:
                 train_err/= 400
             else:
                 train_err = train_err
-            avg_loss  /= (self.n_epochs*400)
-            
+            avg_loss  /= (self.n_epochs*400)                
             if epoch % self.log_test_interval == 0: 
 
                 if self.callbacks:
                     self.callbacks.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
                                            avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
                     
-                if self.incremental and epoch % self.log_test_interval == 0:
+                if self.incremental:
                     print("Model is currently using {} number of modes".format(self.model.convs.incremental_n_modes))
                 
                 _ = self.evaluate(eval_losses, test_loaders)
