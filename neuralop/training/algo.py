@@ -51,7 +51,7 @@ class Incremental(Paramaters):
             incremental_final = []
             for i in range(self.ndim):
                 max_modes = self.model.fno_blocks.convs.n_modes[i]
-                incremental_modes = self.model.fno_blocks.convs.incremental_n_modes[0][i]
+                incremental_modes = self.model.fno_blocks.convs.incremental_n_modes[i]
                 weight = self.accumulated_grad
                 strength_vector = []
                 for mode_index in range(
