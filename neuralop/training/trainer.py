@@ -146,7 +146,8 @@ class Trainer:
             is_logger = (comm.get_world_rank() == 0)
         else:
             is_logger = True 
-        
+        if self.incremental:
+            print("Model is originally using {} number of modes".format(self.model.fno_blocks.convs.incremental_n_modes))
         for epoch in range(self.n_epochs):
 
             if self.callbacks:
@@ -178,7 +179,7 @@ class Trainer:
                     if self.incremental_resolution:
                         x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
                     sample[0] = x
-                    sample[1] = y  
+                    sample[1] = y 
                     self.callbacks.on_batch_start(idx=idx, sample=sample)
 
                 # Decide what to do about logging later when we decide on batch naming conventions
@@ -222,7 +223,6 @@ class Trainer:
                 else:
                     #self.index = 1
                     out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, int(S // self.index), int(S // self.index))
-
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
 
@@ -253,6 +253,7 @@ class Trainer:
                 
                 loss.backward()
                 
+                # entering
                 if self.incremental:
                     self.incremental_scheduler.step(loss.item(), epoch)
                     
@@ -290,7 +291,7 @@ class Trainer:
                                            avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
                     
                 if self.incremental:
-                    print("Model is currently using {} number of modes".format(self.model.convs.incremental_n_modes))
+                    print("Model is currently using {} number of modes".format(self.model.fno_blocks.convs.incremental_n_modes))
                 
                 _ = self.evaluate(eval_losses, test_loaders)
 

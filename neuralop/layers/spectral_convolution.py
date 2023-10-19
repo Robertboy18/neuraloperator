@@ -44,7 +44,8 @@ def _contract_dense(x, weight, separable=False):
 
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
-
+    if x.shape[-2] < weight.shape[-2]:
+        weight = weight[:, :, :x.shape[-2], :]
     if x.dtype == torch.complex32:
         # if x is half precision, run a specialized einsum
         return einsum_complexhalf(eq, x, weight)
@@ -468,13 +469,12 @@ class SpectralConv(BaseSpectralConv):
         else:
             #inc_height, inc_width = self.incremental_n_modes
             #self.incremental_n_modes = (32, 32)
-            """if resolution == 32:
+            if resolution == 32:
                 self.incremental_n_modes = (min(resolution, self.incremental_n_modes[0]), min(resolution, self.incremental_n_modes[1]))
             elif resolution == 64:
                 self.incremental_n_modes = (min(resolution, self.incremental_n_modes[0]), min(resolution, self.incremental_n_modes[1]))
             elif resolution == 128:
-                self.incremental_n_modes = (min(resolution, self.incremental_n_modes[0]), min(resolution, self.incremental_n_modes[1]))"""
-            pass
+                self.incremental_n_modes = (min(resolution, self.incremental_n_modes[0]), min(resolution, self.incremental_n_modes[1]))
             # Example usage
             #self.incremental_n_modes = (resolution, resolution)
             #print("Resolution", resolution, self.incremental_n_modes)
@@ -541,7 +541,6 @@ class SpectralConv(BaseSpectralConv):
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
-
         return x
 
     def get_conv(self, indices):
