@@ -271,7 +271,9 @@ class Trainer:
             if isinstance(scheduler[0], torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler[0].step(train_err)
             else:
-                if epoch >= 500:
+                if epoch <= 180:
+                    scheduler[1].step()
+                elif epoch > 190:
                     scheduler[1].step()
                 else:
                     scheduler[0].step()
