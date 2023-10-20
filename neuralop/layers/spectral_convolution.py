@@ -469,13 +469,12 @@ class SpectralConv(BaseSpectralConv):
         else:
             #inc_height, inc_width = self.incremental_n_modes
             #self.incremental_n_modes = (32, 32)
-            """if resolution == 32:
+            if resolution == 32:
                 self.incremental_n_modes = (min(resolution, self.incremental_n_modes[0]), min(resolution, self.incremental_n_modes[1]))
             elif resolution == 64:
                 self.incremental_n_modes = (min(resolution, self.incremental_n_modes[0]), min(resolution, self.incremental_n_modes[1]))
             elif resolution == 128:
-                self.incremental_n_modes = (min(resolution, self.incremental_n_modes[0]), min(resolution, self.incremental_n_modes[1]))"""
-            pass
+                self.incremental_n_modes = (min(resolution, self.incremental_n_modes[0]), min(resolution, self.incremental_n_modes[1]))
             # Example usage
             #self.incremental_n_modes = (resolution, resolution)
             #print("Resolution", resolution, self.incremental_n_modes)
