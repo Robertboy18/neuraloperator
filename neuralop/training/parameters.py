@@ -43,7 +43,7 @@ class Paramaters:
 
         if self.incremental_loss_gap:
             # incremental loss gap
-            paramaters_gap = paramaters.incremental_loss_gap
+            paramaters_gap = 0.01 #paramaters.incremental_loss_gap
             self.eps = paramaters_gap.eps
             self.loss_list = []
 
