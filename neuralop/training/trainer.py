@@ -6,21 +6,22 @@ import pathlib
 from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
-
+from .algo import Incremental
 
 class Trainer:
     def __init__(self, *, 
                  model, 
                  n_epochs, 
+                 output_field_indices=None, 
                  wandb_log=True, 
                  device=None, 
-                 amp_autocast=False,
-                 data_processor=None,
+                 amp_autocast=False, 
                  callbacks = None,
                  log_test_interval=1, 
                  log_output=False, 
                  use_distributed=False, 
-                 verbose=False):
+                 verbose=True, incremental = False, incremental_loss_gap = False, incremental_resolution = False, 
+                 dataset_name = None, save_interval=2, model_save_dir='./checkpoints'):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -28,19 +29,19 @@ class Trainer:
         ----------
         model : nn.Module
         n_epochs : int
+        output_field_indices : dict | None
+            if a model has multiple output fields, this maps to
+            the indices of a model's output associated with each field. 
         wandb_log : bool, default is True
         device : torch.device
         amp_autocast : bool, default is False
-        data_processor : class to transform data, default is None
-            if not None, data from the loaders is transform first with data_processor.preprocess,
-            then after getting an output from the model, that is transformed with data_processor.postprocess.
         log_test_interval : int, default is 1
             how frequently to print updates
         log_output : bool, default is False
             if True, and if wandb_log is also True, log output images to wandb
         use_distributed : bool, default is False
             whether to use DDP
-        verbose : bool, default is False
+        verbose : bool, default is True
         """
 
         if callbacks:
@@ -66,10 +67,29 @@ class Trainer:
                  log_test_interval=log_test_interval, 
                  log_output=log_output, 
                  use_distributed=use_distributed, 
-                 verbose=verbose)
-
+                 verbose=verbose, incremental = False, incremental_loss_gap = False, incremental_resolution = False, dataset_name = None, save_interval=2, model_save_dir='./checkpoints')
+        
+        self.incremental_loss_gap = incremental_loss_gap
+        self.incremental_grad = incremental
+        self.incremental_resolution = incremental_resolution
+        self.incremental = self.incremental_loss_gap or self.incremental_grad
+        self.dataset_name = dataset_name
+        self.save_interval = save_interval
+        self.model_save_dir = model_save_dir
+        self.save = False
+        
+        if self.incremental or self.incremental_resolution:
+            self.incremental_scheduler = Incremental(model, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution, dataset_name = self.dataset_name)
+            self.index = 1
+                    
         self.model = model
         self.n_epochs = n_epochs
+
+        if not output_field_indices:
+            self.output_field_indices = {'':None}
+        else:
+            self.output_field_indices = output_field_indices
+        self.output_fields = list(self.output_field_indices.keys())
 
         self.wandb_log = wandb_log
         self.log_test_interval = log_test_interval
@@ -78,8 +98,7 @@ class Trainer:
         self.use_distributed = use_distributed
         self.device = device
         self.amp_autocast = amp_autocast
-        self.data_processor = data_processor
-
+        
         if self.callbacks:
             self.callbacks.on_init_end(model=model, 
                  n_epochs=n_epochs, 
@@ -89,10 +108,11 @@ class Trainer:
                  log_test_interval=log_test_interval, 
                  log_output=log_output, 
                  use_distributed=use_distributed, 
-                 verbose=verbose)
+                 verbose=verbose, incremental = False, incremental_loss_gap = False, incremental_resolution = False, dataset_name = None, save_interval=2, model_save_dir='./checkpoints')
+        
         
     def train(self, train_loader, test_loaders,
-            optimizer, scheduler, regularizer,
+            optimizer, scheduler=[None, None], regularizer=None,
               training_loss=None, eval_losses=None):
         
         """Trains the given model on the given datasets.
@@ -105,10 +125,7 @@ class Trainer:
             optimizer to use during training
         optimizer: torch.optim.lr_scheduler
             learning rate scheduler to use during training
-        training_loss: training.losses function
-            cost function to minimize
-        eval_losses: dict[Loss]
-            dict of losses to use in self.eval()
+        training_loss: function to use 
         """
 
         if self.callbacks:
@@ -116,7 +133,7 @@ class Trainer:
                                     optimizer=optimizer, scheduler=scheduler, 
                                     regularizer=regularizer, training_loss=training_loss, 
                                     eval_losses=eval_losses)
-            
+
         if training_loss is None:
             training_loss = LpLoss(d=2)
 
@@ -127,7 +144,8 @@ class Trainer:
             is_logger = (comm.get_world_rank() == 0)
         else:
             is_logger = True 
-        
+        if self.incremental:
+            print("Model is originally using {} number of modes".format(self.model.fno_blocks.convs.incremental_n_modes))
         for epoch in range(self.n_epochs):
 
             if self.callbacks:
@@ -138,28 +156,71 @@ class Trainer:
             self.model.train()
             t1 = default_timer()
             train_err = 0.0
-
+            batch_size = 10
+            S = 128
+            self.index = 1
             for idx, sample in enumerate(train_loader):
 
                 if self.callbacks:
+                    if self.dataset_name == 'Burgers' or self.dataset_name == 'Re5000':
+                        x, y = sample[0], sample[1]
+                    else:
+                        x, y = sample['x'], sample['y']
+                    if self.dataset_name == 'Re5000':
+                        x = x.to(self.device).view(batch_size, 1, S, S)
+                        y = y.to(self.device).view(batch_size, 1, S, S)   
+                    else:      
+                        x = x.to(self.device)
+                        y = y.to(self.device)
+                
+                    #self.index = 1
+                    if self.incremental_resolution:
+                        x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
+                    sample[0] = x
+                    sample[1] = y 
                     self.callbacks.on_batch_start(idx=idx, sample=sample)
+
+                # Decide what to do about logging later when we decide on batch naming conventions
+                '''if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f'Training on raw inputs of size {x.shape=}, {y.shape=}')'''
+                """if self.dataset_name == 'Burgers' or self.dataset_name == 'Re5000':
+                    x, y = sample[0], sample[1]
+                else:
+                    x, y = sample['x'], sample['y']
+                if self.dataset_name == 'Re5000':
+                    x = x.to(self.device).view(batch_size, 1, S, S)
+                    y = y.to(self.device).view(batch_size, 1, S, S)
+                else:      
+                    x = x.to(self.device)
+                    y = y.to(self.device)
+                self.index = 1
+                if self.incremental_resolution:
+                    x, y, self.index = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
+                sample[0] = x
+                sample[1] = y"""  
+                
+                y = sample[1]
+
+                # load everything from the batch onto self.device if 
+                # no callback overrides default load to device
+                
+                if self.override_load_to_device:
+                    self.callbacks.on_load_to_device(sample=sample)
+                else:
+                    for idx in range(len(sample)):
+                        if hasattr(sample[idx], 'to'):
+                            sample[idx] = sample[idx].to(self.device)
 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
 
-                if self.data_processor is not None:
-                    sample = self.data_processor.preprocess(sample)
-
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
-                        out  = self.model(**sample)
+                        out = self.model(**sample)
                 else:
-                    out  = self.model(**sample)
-
-                if self.data_processor is not None:
-                    out = self.data_processor.postprocess(out)
-
+                    #self.index = 1
+                    out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, int(S // self.index), int(S // self.index))
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
 
@@ -179,18 +240,21 @@ class Trainer:
                                 loss += training_loss(**out, **sample)
                     else:
                         if isinstance(out, torch.Tensor):
-                            loss = training_loss(out.float(), **sample)
+                            loss = training_loss(out.float(), sample[1])
                         elif isinstance(out, dict):
                             loss += training_loss(**out, **sample)
                 
-                # del out
+                del out
 
                 if regularizer:
                     loss += regularizer.loss
                 
                 loss.backward()
-                del out
-
+                
+                # entering
+                if self.incremental:
+                    self.incremental_scheduler.step(loss.item(), epoch)
+                    
                 optimizer.step()
                 train_err += loss.item()
         
@@ -202,25 +266,32 @@ class Trainer:
                 if self.callbacks:
                     self.callbacks.on_batch_end()
 
-            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler.step(train_err)
+            if isinstance(scheduler[0], torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler[0].step(train_err)
             else:
-                scheduler.step()
+                if epoch < 27:
+                    scheduler[1].step()
+                else:
+                    scheduler[0].step()
 
             epoch_train_time = default_timer() - t1            
 
             train_err /= len(train_loader)
-            avg_loss  /= self.n_epochs
-            
+            if self.dataset_name == 'Re5000':
+                train_err/= 400
+            else:
+                train_err = train_err
+            avg_loss  /= (self.n_epochs*400)                
             if epoch % self.log_test_interval == 0: 
 
                 if self.callbacks:
                     self.callbacks.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
                                            avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
+                    
+                if self.incremental:
+                    print("Model is currently using {} number of modes".format(self.model.fno_blocks.convs.incremental_n_modes))
                 
-
-                for loader_name, loader in test_loaders.items():
-                    _ = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                _ = self.evaluate(eval_losses, test_loaders)
 
                 if self.callbacks:
                     self.callbacks.on_val_end()
@@ -248,27 +319,55 @@ class Trainer:
         """
 
         if self.callbacks:
-            self.callbacks.on_val_epoch_start(log_prefix=log_prefix, loss_dict = loss_dict, data_loader=data_loader)
+            self.callbacks.on_val_epoch_start(loss_dict = loss_dict, data_loader=data_loader)
 
         self.model.eval()
 
         errors = {f'{log_prefix}_{loss_name}':0 for loss_name in loss_dict.keys()}
-
+        batch_size = 10
+        S = 128
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-
-                n_samples += sample['y'].size(0)
+                
                 if self.callbacks:
+                    x = sample[0]
+                    y = sample[1]
+                    if self.dataset_name == 'Re5000':
+                        x = x.to(self.device).view(batch_size, 1, S, S)
+                        y = y.to(self.device).view(batch_size, 1, S, S)
+                    else:
+                        y = y.to(self.device)
+                        x = x.to(self.device)
+                
+                    sample[0] = x
+                    sample[1] = y
                     self.callbacks.on_val_batch_start(idx=idx, sample=sample)
+                """x = sample[0]
+                y = sample[1]
+                if self.dataset_name == 'Re5000':
+                    x = x.to(self.device).view(batch_size, 1, S, S)
+                    y = y.to(self.device).view(batch_size, 1, S, S)
+                else:
+                    y = y.to(self.device)
+                    x = x.to(self.device)
+            
+                sample[0] = x
+                sample[1] = y"""
+                y = sample[1]
+                n_samples += y.size(0)
 
-                if self.data_processor is not None:
-                    sample = self.data_processor.preprocess(sample)
-
-                out = self.model(**sample)
-
-                if self.data_processor is not None:
-                    out = self.data_processor.postprocess(out)
+                # load everything from the batch onto self.device if 
+                # no callback overrides default load to device
+                
+                if self.override_load_to_device:
+                    self.callbacks.on_load_to_device(sample=sample)
+                else:
+                    for idx in range(len(sample)):
+                        if hasattr(sample[idx], 'to'):
+                            sample[idx] = sample[idx].to(self.device)
+                #self.index = 1
+                out = self.model(sample[0], resolution = int(S // self.index), mode = "train").reshape(batch_size, 1, 128, 128)
 
                 if self.callbacks:
                     self.callbacks.on_before_val_loss(out=out)
@@ -281,24 +380,24 @@ class Trainer:
                             val_loss = self.callbacks.compute_training_loss(**out, **sample)
                     else:
                         if isinstance(out, torch.Tensor):
-                            val_loss = loss(out, **sample)
+                            val_loss = loss(out, sample[1]).item()
                         elif isinstance(out, dict):
-                            val_loss = loss(out, **sample)
-                        if val_loss.shape == ():
-                            val_loss = val_loss.item()
+                            val_loss = loss(out, **sample).item()
 
                     errors[f'{log_prefix}_{loss_name}'] += val_loss
 
                 if self.callbacks:
                     self.callbacks.on_val_batch_end()
         
-        del out
+        del y, out
 
         for key in errors.keys():
-            errors[key] /= n_samples
+            if self.dataset_name == 'Re5000':
+                errors[key] /= (n_samples * 1)
+            else:
+                errors[key] /= n_samples
         
         if self.callbacks:
             self.callbacks.on_val_epoch_end(errors=errors)
 
         return errors
-
