@@ -23,8 +23,8 @@ class Paramaters:
             [
                 YamlConfig(
                     # Add the config path to the incremental config file
-                    '/workspace/markov_neural_operator/scripts/config/incremental.yaml',
-                    #'/home/user/markov_neural_operator/scripts/config/incremental.yaml',
+                    #'/workspace/markov_neural_operator/scripts/config/incremental.yaml',
+                    '/home/user/markov_neural_operator/scripts/config/incremental.yaml',
                     config_name='default'),
                 ArgparseConfig(
                     infer_types=True,
@@ -44,7 +44,7 @@ class Paramaters:
         if self.incremental_loss_gap:
             # incremental loss gap
             paramaters_gap = 0.01 #paramaters.incremental_loss_gap
-            self.eps = paramaters_gap.eps
+            self.eps = 0.01 #paramaters_gap.eps
             self.loss_list = []
 
         if self.incremental_resolution:

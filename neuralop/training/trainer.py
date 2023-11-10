@@ -145,7 +145,7 @@ class Trainer:
         else:
             is_logger = True 
         if self.incremental:
-            print("Model is originally using {} number of modes".format(self.model.fno_blocks.convs.incremental_n_modes))
+            print("Model is originally using {} number of modes".format(self.model.fno_blocks.convs.n_modes))
         for epoch in range(self.n_epochs):
 
             if self.callbacks:
@@ -250,10 +250,6 @@ class Trainer:
                     loss += regularizer.loss
                 
                 loss.backward()
-                
-                # entering
-                if self.incremental:
-                    self.incremental_scheduler.step(loss.item(), epoch)
                     
                 optimizer.step()
                 train_err += loss.item()
@@ -275,13 +271,17 @@ class Trainer:
                     scheduler[0].step()
 
             epoch_train_time = default_timer() - t1            
-
+                    
             train_err /= len(train_loader)
             if self.dataset_name == 'Re5000':
                 train_err/= 400
             else:
                 train_err = train_err
-            avg_loss  /= (self.n_epochs*400)                
+            avg_loss  /= (self.n_epochs*400)          
+            # entering
+            if self.incremental:
+                self.incremental_scheduler.step(avg_loss, epoch)
+                      
             if epoch % self.log_test_interval == 0: 
 
                 if self.callbacks:
@@ -289,7 +289,7 @@ class Trainer:
                                            avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
                     
                 if self.incremental:
-                    print("Model is currently using {} number of modes".format(self.model.fno_blocks.convs.incremental_n_modes))
+                    print("Model is currently using {} number of modes".format(self.model.fno_blocks.convs.n_modes))
                 
                 _ = self.evaluate(eval_losses, test_loaders)
 

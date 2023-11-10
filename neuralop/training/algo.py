@@ -1,5 +1,5 @@
 import torch
-from .parameters import Paramaters
+from neuralop.training.paramaters import Paramaters
 
 
 class Incremental(Paramaters):
