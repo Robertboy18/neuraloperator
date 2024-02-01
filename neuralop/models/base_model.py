@@ -3,8 +3,6 @@ import torch
 import warnings
 from pathlib import Path
 
-# Author: Jean Kossaifi
-
 class BaseModel(torch.nn.Module):
     """Based class for all Models
 
