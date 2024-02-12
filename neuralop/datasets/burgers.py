@@ -2,7 +2,7 @@ from pathlib import Path
 import torch
 import numpy as np
 from .tensor_dataset import TensorDataset
-
+import scipy.io
 
 def load_burgers_1d(
     data_path, n_train, n_test, batch_train=32, batch_test=100, time=1, grid=[0, 1]

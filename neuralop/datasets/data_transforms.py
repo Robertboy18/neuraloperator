@@ -166,16 +166,16 @@ class IncrementalDataProcessor(torch.nn.Module):
     def preprocess(self, data_dict, epoch=None, mode = "Train", batched=True):
         x = data_dict['x'].to(self.device)
         y = data_dict['y'].to(self.device)
-
+        
+        if mode == "Train":
+            x, y = self.step(epoch=epoch, x=x, y=y)
+        
         if self.in_normalizer is not None:
             x = self.in_normalizer.transform(x)
         if self.positional_encoding is not None:
             x = self.positional_encoding(x, batched=batched)
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
-        
-        if mode == "Train":
-            x, y = self.step(epoch=epoch, x=x, y=y)
         
         data_dict['x'] = x
         data_dict['y'] = y
