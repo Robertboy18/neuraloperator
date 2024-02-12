@@ -1,0 +1,126 @@
+wandb_version: 1
+
+n_params_baseline:
+  desc: null
+  value: null
+verbose:
+  desc: null
+  value: true
+arch:
+  desc: null
+  value: fno2d
+distributed:
+  desc: null
+  value:
+    use_distributed: false
+    wireup_info: mpi
+    wireup_store: tcp
+    model_parallel_size: 2
+    seed: 666
+fno2d:
+  desc: null
+  value:
+    data_channels: 3
+    n_modes_height: 24
+    n_modes_width: 24
+    hidden_channels: 64
+    projection_channels: 256
+    n_layers: 4
+    domain_padding: '0.078125'
+    domain_padding_mode: one-sided
+    fft_norm: forward
+    norm: null
+    skip: soft-gating
+    implementation: reconstructed
+    use_mlp: 1
+    mlp_expansion: '0.5'
+    mlp_dropout: 0
+    separable: false
+    factorization: null
+    rank: '1.0'
+    fixed_rank_modes: null
+    dropout: '0.0'
+    tensor_lasso_penalty: '0.0'
+    joint_factorization: false
+    fno_block_precision: full
+    stabilizer: null
+opt:
+  desc: null
+  value:
+    n_epochs: 1
+    learning_rate: '0.001'
+    training_loss: h1
+    weight_decay: '0.0001'
+    amp_autocast: false
+    scheduler_T_max: 500
+    scheduler_patience: 5
+    scheduler: StepLR
+    step_size: 60
+    gamma: '0.5'
+data:
+  desc: null
+  value:
+    batch_size: 16
+    n_train: 1000
+    train_resolution: 16
+    n_tests:
+    - 100
+    - 50
+    test_resolutions:
+    - 16
+    - 32
+    test_batch_sizes:
+    - 16
+    - 16
+    positional_encoding: true
+    encode_input: true
+    encode_output: false
+patching:
+  desc: null
+  value:
+    levels: 0
+    padding: 0
+    stitching: false
+incremental:
+  desc: null
+  value:
+    incremental_loss_gap: true
+    incremental_grad: false
+    incremental_res: true
+wandb:
+  desc: null
+  value:
+    log: true
+    name: darcy-rerun
+    group: ''
+    project: darcy
+    entity: research-pino_ifno
+    sweep: false
+    log_output: true
+    log_test_interval: 1
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.13
+    cli_version: 0.16.3
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1707527650.879059
+    t:
+      1:
+      - 1
+      - 55
+      2:
+      - 1
+      - 55
+      3:
+      - 1
+      - 13
+      - 16
+      - 23
+      4: 3.10.13
+      5: 0.16.3
+      8:
+      - 5
+      13: linux-x86_64

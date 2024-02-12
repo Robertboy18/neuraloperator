@@ -6,9 +6,11 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.nn.functional as F
 
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
-from neuralop.datasets import load_burgers_1dtime
+from neuralop.datasets import load_burgers_mat
 from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup, BasicLoggerCallback
+from neuralop.models import FNO
+from neuralop.training.callbacks import IncrementalCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -71,16 +73,24 @@ if config.verbose:
     sys.stdout.flush()
 
 # Load the Burgers dataset
-train_loader, test_loaders, output_encoder = load_burgers_1dtime(data_path=config.data.folder,
-        n_train=config.data.n_train, batch_size=config.data.batch_size, 
-        n_test=config.data.n_tests[0], batch_size_test=config.data.test_batch_sizes[0],
-        temporal_length=config.data.temporal_length, spatial_length=config.data.spatial_length,
-        pad=config.data.get("pad", 0), temporal_subsample=config.data.get("temporal_subsample", 1),
-        spatial_subsample=config.data.get("spatial_subsample", 1),
-        )
+data_path = "/pscratch/sd/r/rgeorge/data/burgers_data_R10.mat"
+train_loader, test_loaders = load_burgers_mat(data_path, 800, 200)
+output_encoder = None
+#model = get_model(config)
+#model = model.to(device)
 
-model = get_model(config)
-model = model.to(device)
+if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
+    s = (2,)
+else:
+    s = (90,)
+    
+model = FNO(
+    max_n_modes=(90,),
+    n_modes=s,
+    hidden_channels=128,
+    in_channels=1,
+    out_channels=1,
+).to(device)
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
@@ -95,6 +105,31 @@ optimizer = torch.optim.Adam(
     weight_decay=config.opt.weight_decay,
 )
 
+if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
+    callbacks = [
+    IncrementalCallback(
+        incremental_loss_gap=config.incremental.incremental_loss_gap,
+        incremental_grad=config.incremental.incremental_grad,
+        incremental_grad_eps=config.incremental.grad_eps,
+        incremental_buffer=5,
+        incremental_max_iter=config.incremental.max_iter,
+        incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_init_args)]
+else:
+    callbacks = [BasicLoggerCallback(wandb_init_args)]
+data_transform = None
+if config.incremental.incremental_res:
+    data_transform = data_transforms.IncrementalDataProcessor(
+        in_normalizer=None,
+        out_normalizer=None,
+        positional_encoding=None,
+        device=device,
+        dataset_sublist=[4, 2, 1],
+        dataset_resolution=421,
+        dataset_indices=[2, 3],
+        epoch_gap=config.incremental.epoch_gap,
+        verbose=True,
+    ).to(device)
+    
 if config.opt.scheduler == "ReduceLROnPlateau":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -165,26 +200,28 @@ callbacks = [
     BasicLoggerCallback(wandb_init_args)
 ]
 
-data_processor = MGPatchingDataProcessor(model=model,
-                                       levels=config.patching.levels,
-                                       padding_fraction=config.patching.padding,
-                                       stitching=config.patching.stitching,
-                                       device=device,
-                                       in_normalizer=output_encoder,
-                                       out_normalizer=output_encoder)
+tr = False
+if tr:
+    data_transform = MGPatchingDataProcessor(model=model,
+                                           levels=config.patching.levels,
+                                           padding_fraction=config.patching.padding,
+                                           stitching=config.patching.stitching,
+                                           device=device,
+                                           in_normalizer=output_encoder,
+                                           out_normalizer=output_encoder)
+
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
-    data_processor=data_processor,
     device=device,
+    data_processor=data_transform,
     amp_autocast=config.opt.amp_autocast,
-    callbacks=callbacks,
+    wandb_log=config.wandb.log,
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
-    verbose=config.verbose,
-    wandb_log = config.wandb.log
-)
+    verbose=config.verbose and is_logger,
+    callbacks=callbacks)
 
 # Log parameter count
 if is_logger:
@@ -205,10 +242,10 @@ if is_logger:
 
 
 trainer.train(
-    train_loader,
-    test_loaders,
-    optimizer,
-    scheduler,
+    train_loader=train_loader,
+    test_loaders=test_loaders,
+    optimizer=optimizer,
+    scheduler=scheduler,
     regularizer=False,
     training_loss=train_loss,
     eval_losses=eval_losses,

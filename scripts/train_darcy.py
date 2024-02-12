@@ -1,16 +1,19 @@
 import sys
-
+import os
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
-
 from neuralop import H1Loss, LpLoss, Trainer, get_model
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.datasets import load_darcy_flow_small, load_darcy_pt
 from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup
 from neuralop.training.callbacks import BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
+from neuralop.models import FNO
+from neuralop.training.callbacks import IncrementalCallback
+from neuralop.datasets import data_transforms
 
 
 # Read the configuration
@@ -41,12 +44,12 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.tfno2d.n_layers,
-                config.tfno2d.hidden_channels,
-                config.tfno2d.n_modes_width,
-                config.tfno2d.n_modes_height,
-                config.tfno2d.factorization,
-                config.tfno2d.rank,
+                config.fno2d.n_layers,
+                config.fno2d.hidden_channels,
+                config.fno2d.n_modes_width,
+                config.fno2d.n_modes_height,
+                config.fno2d.factorization,
+                config.fno2d.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -70,17 +73,12 @@ if config.verbose and is_logger:
     pipe.log()
     sys.stdout.flush()
 
-# Loading the Darcy flow dataset
-train_loader, test_loaders, data_processor = load_darcy_flow_small(
-    n_train=config.data.n_train,
-    batch_size=config.data.batch_size,
-    positional_encoding=config.data.positional_encoding,
-    test_resolutions=config.data.test_resolutions,
-    n_tests=config.data.n_tests,
-    test_batch_sizes=config.data.test_batch_sizes,
-    encode_input=False,
-    encode_output=False,
-)
+TRAIN_PATH = '/pscratch/sd/r/rgeorge/data/piececonst_r421_N1024_smooth1.mat'
+TEST_PATH = 'pscratch/sd/r/rgeorge/data/piececonst_r421_N1024_smooth2.mat'
+
+train_loader, test_loaders, data_processor = load_darcy_pt(TRAIN_PATH, 800, [200]
+                                                ,train_resolution=421, test_resolutions=[421], batch_size=32, test_batch_sizes=[32], positional_encoding=True, encode_input=False, encode_output=True, encoding='channel-wise', channel_dim=1)
+
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
     data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
@@ -89,9 +87,22 @@ if config.patching.levels > 0:
                                              padding_fraction=config.patching.padding,
                                              stitching=config.patching.stitching,
                                              levels=config.patching.levels)
-data_processor = data_processor.to(device)
+data_transform = data_processor.to(device)
 
-model = get_model(config)
+if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
+    s = (2,2)
+else:
+    s = (90,90)
+    
+model = FNO(
+    max_n_modes=(90, 90),
+    n_modes=s,
+    hidden_channels=128,
+    in_channels=1,
+    out_channels=1,
+)
+
+#get_model(config)
 model = model.to(device)
 
 # Use distributed data parallel
@@ -99,6 +110,31 @@ if config.distributed.use_distributed:
     model = DDP(
         model, device_ids=[device.index], output_device=device.index, static_graph=True
     )
+
+if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
+    callbacks = [
+    IncrementalCallback(
+        incremental_loss_gap=config.incremental.incremental_loss_gap,
+        incremental_grad=config.incremental.incremental_grad,
+        incremental_grad_eps=config.incremental.grad_eps,
+        incremental_buffer=5,
+        incremental_max_iter=config.incremental.max_iter,
+        incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_args)]
+else:
+    callbacks = [BasicLoggerCallback(wandb_args)]
+
+if config.incremental.incremental_res:
+    data_transform = data_transforms.IncrementalDataProcessor(
+        in_normalizer=None,
+        out_normalizer=None,
+        positional_encoding=None,
+        device=device,
+        dataset_sublist=[4, 2, 1],
+        dataset_resolution=421,
+        dataset_indices=[2, 3],
+        epoch_gap=config.incremental.epoch_gap,
+        verbose=True,
+    ).to(device)
 
 # Create the optimizer
 optimizer = torch.optim.Adam(
@@ -154,17 +190,14 @@ trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
     device=device,
-    data_processor=data_processor,
+    data_processor=data_transform,
     amp_autocast=config.opt.amp_autocast,
     wandb_log=config.wandb.log,
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
-    callbacks=[
-        BasicLoggerCallback(wandb_args)
-              ]
-              )
+    callbacks=callbacks)
 
 # Log parameter count
 if is_logger:
