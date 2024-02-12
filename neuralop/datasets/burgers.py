@@ -138,7 +138,11 @@ def load_burgers_mat(data_path, n_train, n_test, batch_train=32, batch_test=100,
         x_train = torch.cat((x_train.unsqueeze(1), grid_train.unsqueeze(1)), 1)
         x_test = torch.cat((x_test.unsqueeze(1), grid_test.unsqueeze(1)), 1)
 
-    train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_train, y_train), batch_size=batch_train, shuffle=False)
-    test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=batch_test, shuffle=False)
-
-    return train_loader, test_loader
+    y_train = y_train.unsqueeze(1)
+    y_test = y_test.unsqueeze(1)
+    
+    train_loader = torch.utils.data.DataLoader(TensorDataset(x_train, y_train), batch_size=batch_train, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(TensorDataset(x_test, y_test), batch_size=batch_test, shuffle=False)
+    test_loaders = {'test':test_loader}
+    
+    return train_loader, test_loaders

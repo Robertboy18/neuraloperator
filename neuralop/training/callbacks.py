@@ -558,13 +558,16 @@ class IncrementalCallback(Callback):
         self.ndim = len(self.state_dict['model'].fno_blocks.convs.n_modes)
         # method 1: loss_gap
         incremental_modes = self.state_dict['model'].fno_blocks.convs.n_modes[0]
+        print(self.state_dict['model'].fno_blocks.convs.n_modes)
         max_modes = self.state_dict['model'].fno_blocks.convs.max_n_modes[0]
         if len(self.loss_list) > 1:
-            if abs(self.loss_list[-1] - self.loss_list[-2]) <= 1:
+            if abs(self.loss_list[-1] - self.loss_list[-2]) <= self.incremental_loss_eps:
+                print("ENTERING")
                 if incremental_modes < max_modes:
                     incremental_modes += 1
-        modes_list = tuple([incremental_modes] * self.ndim)
-        self.state_dict['model'].fno_blocks.convs.n_modes = modes_list
+                print(incremental_modes)
+        modes_list = (incremental_modes, )
+        self.state_dict['model'].fno_blocks.convs.n_modes = [incremental_modes]
 
     # Algorithm 2: Gradient based explained ratio
     def grad_explained(self):

@@ -49,7 +49,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 500
+    n_epochs: 100
     learning_rate: 0.001
     training_loss: 'l2'
     weight_decay: 1e-4
@@ -84,12 +84,12 @@ default: &DEFAULT
     stitching: False
 
   incremental:
-    incremental_loss_gap: True
+    incremental_loss_gap: False
     incremental_grad: False
     incremental_res: False
     grad_eps: 0.99999
     max_iter: 1
-    loss_eps: 0.001
+    loss_eps: 0.1
     grad_max: 2
     epoch_gap: 50
     
