@@ -98,7 +98,7 @@ model = FNO(
     max_n_modes=(90, 90),
     n_modes=s,
     hidden_channels=128,
-    in_channels=1,
+    in_channels=2,
     out_channels=1,
 )
 

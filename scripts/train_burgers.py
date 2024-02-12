@@ -74,7 +74,7 @@ if config.verbose:
 
 # Load the Burgers dataset
 data_path = "/pscratch/sd/r/rgeorge/data/burgers_data_R10.mat"
-train_loader, test_loaders = load_burgers_mat(data_path, 800, 200)
+train_loader, test_loaders = load_burgers_mat(data_path, 1000, 100)
 output_encoder = None
 #model = get_model(config)
 #model = model.to(device)
@@ -88,7 +88,7 @@ model = FNO(
     max_n_modes=(90,),
     n_modes=s,
     hidden_channels=128,
-    in_channels=1,
+    in_channels=2,
     out_channels=1,
 ).to(device)
 
@@ -111,6 +111,7 @@ if config.incremental.incremental_loss_gap or config.incremental.incremental_gra
         incremental_loss_gap=config.incremental.incremental_loss_gap,
         incremental_grad=config.incremental.incremental_grad,
         incremental_grad_eps=config.incremental.grad_eps,
+        incremental_loss_eps = config.incremental.loss_eps,
         incremental_buffer=5,
         incremental_max_iter=config.incremental.max_iter,
         incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_init_args)]
@@ -123,9 +124,9 @@ if config.incremental.incremental_res:
         out_normalizer=None,
         positional_encoding=None,
         device=device,
-        dataset_sublist=[4, 2, 1],
+        dataset_sublist=[256,128,64,32,16,8,4,2,1],
         dataset_resolution=421,
-        dataset_indices=[2, 3],
+        dataset_indices=[2],
         epoch_gap=config.incremental.epoch_gap,
         verbose=True,
     ).to(device)
@@ -195,11 +196,6 @@ if config.verbose:
     sys.stdout.flush()
 
 # only perform MG patching if config patching levels > 0
-
-callbacks = [
-    BasicLoggerCallback(wandb_init_args)
-]
-
 tr = False
 if tr:
     data_transform = MGPatchingDataProcessor(model=model,
