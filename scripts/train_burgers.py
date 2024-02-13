@@ -14,6 +14,7 @@ from neuralop.models import FNO
 from neuralop.training.callbacks import IncrementalCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
+from neuralop.datasets import data_transforms
 
 # Read the configuration
 config_name = "default"
@@ -119,6 +120,7 @@ if config.incremental.incremental_loss_gap or config.incremental.incremental_gra
         incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_init_args)]
 else:
     callbacks = [BasicLoggerCallback(wandb_init_args)]
+    
 data_transform = None
 if config.incremental.incremental_res:
     data_transform = data_transforms.IncrementalDataProcessor(
@@ -126,7 +128,7 @@ if config.incremental.incremental_res:
         out_normalizer=None,
         positional_encoding=None,
         device=device,
-        dataset_sublist=[256,128,64,32,16,8,4,2,1],
+        dataset_sublist=config.incremental.sub_list1,
         dataset_resolution=8192,
         dataset_indices=[2],
         epoch_gap=config.incremental.epoch_gap,

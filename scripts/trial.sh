@@ -12,7 +12,8 @@ module load conda
 conda activate myenv
 #CUDA_VISIBLE_DEVICES=0 python train_darcy.py --incremental.incremental_loss_gap=True --incremental.incremental_res=True 
 python train_burgers.py --incremental.incremental_loss_gap=True
-python train_burgers.py --incremental.incremental_loss_gap=True --incremental.incremental_res=True
+CUDA_VISIBLE_DEVICES=2 python train_burgers.py --incremental.incremental_loss_gap=True --incremental.incremental_res=True
 python train_burgers.py --incremental.incremental_res=True
-python train_burgers.py
+python train_burgers.py --incremental.incremental_grad=True
+CUDA_VISIBLE_DEVICES=3 python train_burgers.py --incremental.incremental_grad=True --incremental.incremental_res=True
 
