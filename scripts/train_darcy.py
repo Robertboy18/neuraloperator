@@ -117,6 +117,7 @@ if config.incremental.incremental_loss_gap or config.incremental.incremental_gra
         incremental_loss_gap=config.incremental.incremental_loss_gap,
         incremental_grad=config.incremental.incremental_grad,
         incremental_grad_eps=config.incremental.grad_eps,
+        incremental_loss_eps = config.incremental.loss_eps,
         incremental_buffer=5,
         incremental_max_iter=config.incremental.max_iter,
         incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_args)]
@@ -129,7 +130,7 @@ if config.incremental.incremental_res:
         out_normalizer=None,
         positional_encoding=None,
         device=device,
-        dataset_sublist=[4, 2, 1],
+        dataset_sublist=[10,9,8,7,6,5,4,3,2,1],
         dataset_resolution=421,
         dataset_indices=[2, 3],
         epoch_gap=config.incremental.epoch_gap,
