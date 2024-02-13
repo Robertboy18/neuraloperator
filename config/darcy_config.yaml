@@ -82,14 +82,14 @@ default: &DEFAULT
     incremental_res: False
     grad_eps: 0.99999
     max_iter: 1
-    loss_eps: 0.001
+    loss_eps: 0.01
     grad_max: 2
-    epoch_gap: 150
+    epoch_gap: 50
 
   # Weights and biases
   wandb:
     log: True
-    name: "darcy-final-rerun-joint-loss" # If None, config will be used but you can override it here
+    name: "darcy-final-rerun-loss" # If None, config will be used but you can override it here
     group: '' 
     project: "darcy"
     entity: "research-pino_ifno" # put your username here
