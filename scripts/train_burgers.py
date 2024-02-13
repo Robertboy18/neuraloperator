@@ -1,3 +1,4 @@
+import os
 import sys
 import torch
 import wandb
@@ -31,6 +32,7 @@ config_name = pipe.steps[-1].config_name
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
 
+os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/wandb")
 # Set up WandB logging
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
@@ -125,7 +127,7 @@ if config.incremental.incremental_res:
         positional_encoding=None,
         device=device,
         dataset_sublist=[256,128,64,32,16,8,4,2,1],
-        dataset_resolution=421,
+        dataset_resolution=8192,
         dataset_indices=[2],
         epoch_gap=config.incremental.epoch_gap,
         verbose=True,
