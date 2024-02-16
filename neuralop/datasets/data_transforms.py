@@ -156,6 +156,8 @@ class IncrementalDataProcessor(torch.nn.Module):
             indexes = torch.arange(0, x.size(idx), self.current_sub, device=self.device)
             x = x.index_select(dim=idx, index=indexes)
             y = y.index_select(dim=idx, index=indexes)
+        #x = x[:, :, ::self.current_sub, ::self.current_sub]
+        #y = y[:, :, ::self.current_sub, ::self.current_sub]
         return x, y
     
     def step(self, loss=None, epoch=None, x=None, y=None):

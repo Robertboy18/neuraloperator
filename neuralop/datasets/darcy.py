@@ -56,7 +56,7 @@ def load_darcy_flow_small(
                 f"but got test_resolutions={test_resolutions}"
             )
     path = Path(__file__).resolve().parent.joinpath("data")
-    return load_darcy_pt(
+    return load_darcy_pt1(
         str(path),
         n_train=n_train,
         n_tests=n_tests,
@@ -73,7 +73,7 @@ def load_darcy_flow_small(
     )
 
 
-def load_darcy_pt(
+def load_darcy_pt1(
     data_path,
     n_train,
     n_tests,

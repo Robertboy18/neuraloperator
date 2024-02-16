@@ -10,7 +10,12 @@ from neuralop.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
-
+from neuralop.datasets.data_transforms import MGPatchingDataProcessor
+from neuralop.training import setup, BasicLoggerCallback
+from neuralop.models import FNO
+from neuralop.training.callbacks import IncrementalCallback
+from neuralop.utils import get_wandb_api_key, count_model_params
+from neuralop.datasets import data_transforms
 
 
 # Read the configuration
@@ -70,6 +75,7 @@ if config.verbose:
     pipe.log()
     sys.stdout.flush()
 
+data_path = "pscratch/sd/r/rgeorge/data/nsforcing_128.zip (Unzipped Files)/nsforcing_128_train.pt"
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     config.data.folder,
@@ -97,8 +103,20 @@ if config.patching.levels > 0:
                                              levels=config.patching.levels)
 
 data_processor = data_processor.to(device)
-model = get_model(config)
-model = model.to(device)
+#model = get_model(config)
+#model = model.to(device)
+if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
+    s = (2,2)
+else:
+    s = (90,90)
+    
+model = FNO(
+    max_n_modes=(90, 90),
+    n_modes=s,
+    hidden_channels=128,
+    in_channels=1,
+    out_channels=1,
+).to(device)
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
@@ -112,6 +130,34 @@ optimizer = torch.optim.Adam(
     lr=config.opt.learning_rate,
     weight_decay=config.opt.weight_decay,
 )
+
+if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
+    callbacks = [
+    IncrementalCallback(
+        incremental_loss_gap=config.incremental.incremental_loss_gap,
+        incremental_grad=config.incremental.incremental_grad,
+        incremental_grad_eps=config.incremental.grad_eps,
+        incremental_loss_eps = config.incremental.loss_eps,
+        incremental_buffer=5,
+        incremental_max_iter=config.incremental.max_iter,
+        incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_init_args)]
+else:
+    callbacks = [BasicLoggerCallback(wandb_init_args)]
+    
+data_transform = None
+if config.incremental.incremental_res:
+    data_transform = data_transforms.IncrementalDataProcessor(
+        in_normalizer=None,
+        out_normalizer=None,
+        positional_encoding=None,
+        device=device,
+        dataset_sublist=config.incremental.sub_list1,
+        dataset_resolution=128,
+        dataset_indices=[2,3],
+        epoch_gap=config.incremental.epoch_gap,
+        verbose=True,
+    ).to(device)
+    
 
 if config.opt.scheduler == "ReduceLROnPlateau":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -155,18 +201,11 @@ if config.verbose:
     print(f"\n * Test: {eval_losses}")
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
-
-# only perform MG patching if config patching levels > 0
-
-callbacks = [
-    BasicLoggerCallback(wandb_init_args)
-]
-
-
+s
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
-    data_processor=data_processor,
+    data_processor=data_transform,
     device=device,
     amp_autocast=config.opt.amp_autocast,
     callbacks=callbacks,
@@ -196,14 +235,15 @@ if is_logger:
 
 
 trainer.train(
-    train_loader,
-    test_loaders,
-    optimizer,
-    scheduler,
+    train_loader=train_loader,
+    test_loaders=test_loaders,
+    optimizer=optimizer,
+    scheduler=scheduler,
     regularizer=False,
     training_loss=train_loss,
     eval_losses=eval_losses,
 )
+
 
 if config.wandb.log and is_logger:
     wandb.finish()

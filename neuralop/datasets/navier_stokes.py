@@ -174,7 +174,7 @@ def _load_navier_stokes_test_HR(data_path, n_test, resolution=256,
     else:
         raise ValueError(f'Invalid resolution, got {resolution}, expected one of [128, 256, 512, 1024].')
     
-    data = torch.load(Path(data_path).joinpath('nsforcing_1024_test1.pt').as_posix())
+    data = torch.load(Path(data_path).joinpath('nsforcing_128_test.pt').as_posix())
 
     if not isinstance(n_test, int):
         n_samples = data['x'].shape[0]

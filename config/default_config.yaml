@@ -43,6 +43,17 @@ default: &DEFAULT
     fno_block_precision: 'full' # or 'half', 'mixed'
     stabilizer: None # or 'tanh'
 
+  incremental:
+    incremental_loss_gap: False
+    incremental_grad: False
+    incremental_res: False
+    grad_eps: 0.99999
+    max_iter: 1
+    loss_eps: 0.01
+    grad_max: 2
+    epoch_gap: 50
+    sub_list1: [4, 2, 1]
+    
   # Optimizer
   opt:
     n_epochs: 500
@@ -60,7 +71,7 @@ default: &DEFAULT
   # Dataset related
   data:
     # folder: '/home/nikola/HDD/NavierStokes/2D'
-    folder: /data/navier_stokes/
+    folder: '/pscratch/sd/r/rgeorge/data/nsforcing_128.zip (Unzipped Files)/'
     # folder: '/data'
     batch_size: 16
     n_train: 10000
@@ -70,7 +81,7 @@ default: &DEFAULT
     test_batch_sizes: [16, 8, 4] #, 1]
     positional_encoding: True
 
-    encode_input: True
+    encode_input: False
     encode_output: False
     num_workers: 0
     pin_memory: False
@@ -85,10 +96,10 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: None # If None, config will be used but you can override it here
-    group: 'super-resolution' 
-    project: "Refactored-TFNO"
-    entity: "nvr-ai-algo" # put your username here
+    name: "navierstokes-final-rerun" # If None, config will be used but you can override it here
+    group: '' 
+    project: "navier-stokes"
+    entity: "research-pino_ifno" # put your username here
     sweep: False
     log_output: True
     log_test_interval: 1
@@ -117,28 +128,3 @@ original_fno:
     factorization: None
     rank: 1.0
     fixed_rank_modes: None
-
-  wandb:
-    log: False
-    name: None # If None, config will be used but you can override it here
-    group: 'wandb_group'
-    
-  
-distributed_mg_tucker:
-  tfno2d:
-    factorization: Tucker
-    compression: 0.42
-    domain_padding: 9
-
-  distributed:
-    use_distributed: True
-    wireup_info: 'mpi'
-    wireup_store: 'tcp'
-    model_parallel_size: 2
-    seed: 666
-
-  patching:
-    levels: 1
-    padding: 16
-    stitching: True
-
