@@ -100,6 +100,7 @@ def load_navier_stokes_pt(data_path, train_resolution,
     data = torch.load(Path(data_path).joinpath('nsforcing_' + train_resolution_str + '_test.pt').as_posix())
     x_test = data['x'][:n_test, :, :].unsqueeze(channel_dim).clone()
     y_test = data['y'][:n_test, :, :].unsqueeze(channel_dim).clone()
+    print(x_train.shape)
     del data
     
     pos_encoding = None
@@ -186,3 +187,58 @@ def _load_navier_stokes_test_HR(data_path, n_test, resolution=256,
 
     return x_test, y_test
 
+
+def load_ns_high(data_path, ntrain=8, ntest=2, subsampling_rate=1, batch_size=50, T = 5000, in_dim = 1, out_dim = 1, ntimeindex = 1, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True):
+    
+    data_train = torch.load(data_path)['vorticity']
+    rate = subsampling_rate
+    T_in = 1
+    S = 256//subsampling_rate
+    step = 1
+    T1 = T//ntimeindex
+    T_in = T_in
+    T = T
+    sub = subsampling_rate
+    T_out = T_in + T
+    ntimeindex = ntimeindex
+    T1 = T1
+    channel_dim = 1
+
+    data = data_train[..., ::sub, ::sub]
+
+    x_train = data[:ntrain, T_in-1:T_out-1:ntimeindex].clone()
+    y_train = data[:ntrain, T_in:T_out:ntimeindex].clone()
+
+    x_test = data[-ntest:, T_in-1:T_out-1:ntimeindex].clone()
+    y_test = data[-ntest:, T_in:T_out:ntimeindex].clone()
+    
+    del data
+
+    x_train = x_train.reshape(ntrain*T1, S, S).unsqueeze(channel_dim)
+    y_train = y_train.reshape(ntrain*T1, S, S).unsqueeze(channel_dim)
+    
+    x_test = x_test.reshape(ntest*T1, S, S).unsqueeze(channel_dim)
+    y_test = y_test.reshape(ntest*T1, S, S).unsqueeze(channel_dim)
+
+
+    train_db = TensorDataset(x_train, y_train)
+    test_db = TensorDataset(x_test, y_test)
+    
+    test_resolutions = [256]
+    n_tests = [10000]
+    test_batch_sizes = [50]
+    train_loader = torch.utils.data.DataLoader(train_db, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
+    test_loader = torch.utils.data.DataLoader(test_db,batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
+    test_loaders =  {256: test_loader}
+    for (res, n_test, test_batch_size) in zip(test_resolutions, n_tests, test_batch_sizes):
+        print(f'Loading test db at resolution {res} with {n_test} samples and batch-size={test_batch_size}')
+        x_test, y_test = x_test, y_test
+
+        test_db = TensorDataset(x_test, y_test)
+        test_loader = torch.utils.data.DataLoader(test_db,
+                                                  batch_size=test_batch_size, shuffle=False,
+                                                  num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
+        test_loaders[res] = test_loader
+
+    data_processor = None
+    return train_loader, test_loaders, data_processor

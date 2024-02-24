@@ -10,5 +10,5 @@
 # set up for problem & define any environment variables here
 module load conda
 conda activate myenv
-CUDA_VISIBLE_DEVICES=0 python train_navier_stokes.py --incremental.incremental_loss_gap=True --incremental.incremental_res=True & CUDA_VISIBLE_DEVICES=1 python train_navier_stokes.py --incremental.incremental_grad=True --incremental.incremental_res=True & CUDA_VISIBLE_DEVICES=3 python train_navier_stokes.py --incremental.incremental_res=True
+CUDA_VISIBLE_DEVICES=0 python train_navier_stokes-high.py --incremental.incremental_loss_gap=True --incremental.incremental_res=True & CUDA_VISIBLE_DEVICES=1 python train_navier_stokes-high.py --incremental.incremental_grad=True --incremental.incremental_res=True & CUDA_VISIBLE_DEVICES=2 python train_navier_stokes-high.py --incremental.incremental_loss_gap=True & CUDA_VISIBLE_DEVICES=3 python train_navier_stokes-high.py --incremental.incremental_grad=True
 #& CUDA_VISIBLE_DEVICES=2 python train_navier_stokes.py --incremental.incremental_res=True
