@@ -6,7 +6,7 @@ import pathlib
 from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
-
+import numpy as np
 
 class Trainer:
     def __init__(self, *, 
@@ -81,7 +81,8 @@ class Trainer:
         self.amp_autocast = amp_autocast
         self.data_processor = data_processor
         self.incremental_resolution = False
-        
+        self.nstime = False
+        self.ns2dtime = True
         # If the data_processor is an IncrementalDataProcessor, then we need to do curriculum learning - Increase the resolution of the samples incrementally
         if type(self.data_processor).__name__ == "IncrementalDataProcessor":
             self.incremental_resolution = True
@@ -159,21 +160,47 @@ class Trainer:
                 else:
                     # load data to device if no preprocessor exists
                     sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
-
+                    
+                x = sample['x']
+                y = sample['y']
+                batch, res = x.shape[0], x.shape[1]
+                if self.nstime:
+                    x = sample['x']
+                    grid = self.get_grid(x.shape, x.device)
+                    sample['x'] = torch.cat((x, grid), dim=-1).permute(0, 4, 1, 2, 3)
+                
+                loss1 = 0.
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
                         out  = self.model(**sample)
                 else:
-                    out  = self.model(**sample)
+                    if self.nstime:
+                        out  = self.model(**sample).view(batch, res, res, 10)
+                    elif self.ns2dtime:
+                        for t in range(0, 10):
+                            sample['y'] = y[..., t:t+1]
+                            if t == 0:
+                                xx = sample['x']
+                            x = xx
+                            sample['x'] = x.permute(0, 3, 1, 2)
+                            out = self.model(**sample).permute(0, 2, 3, 1)
+                            sample['y'] = sample['y'].view(batch, -1)
+                            loss1 += training_loss(out.view(batch, -1), **sample)
+                            if t == 0:
+                                pred = out
+                            else:
+                                pred = torch.cat((pred, out), -1)
+                            xx = torch.cat((xx[..., 1:], out), dim=-1)
+                    else:
+                        out = self.model(**sample)
 
                 if self.data_processor is not None:
                     out, sample = self.data_processor.postprocess(out, sample)
 
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
-
-                loss = 0.
-
+                
+                loss = 0
                 if self.overrides_loss:
                     if isinstance(out, torch.Tensor):
                         loss += self.callbacks.compute_training_loss(out=out.float(), **sample, amp_autocast=self.amp_autocast)
@@ -188,10 +215,15 @@ class Trainer:
                                 loss += training_loss(**out, **sample)
                     else:
                         if isinstance(out, torch.Tensor):
-                            loss = training_loss(out.float(), **sample)
+                            if self.nstime:
+                                sample['y'] = sample['y'].view(batch, -1)
+                                loss = training_loss(out.view(batch, -1), **sample)
+                            if self.ns2dtime:
+                                loss += loss1
+                            else:
+                                loss = training_loss(out.float(), **sample)
                         elif isinstance(out, dict):
                             loss += training_loss(**out, **sample)
-                
                 if regularizer:
                     loss += regularizer.loss
                 
@@ -279,8 +311,36 @@ class Trainer:
                 else:
                     # load data to device if no preprocessor exists
                     sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
-                    
-                out = self.model(**sample)
+                x = sample['x']
+                y = sample['y']
+                batch, res = x.shape[0], x.shape[1]
+                loss1 = 0.
+                loss2 = 0.
+                if self.nstime:
+                    x = sample['x']
+                    grid = self.get_grid(x.shape, x.device)
+                    x = torch.cat((x, grid), dim=-1)
+                    sample['x'] = x.permute(0, 4, 1, 2, 3)
+            
+                    out = self.model(**sample).reshape(batch, res, res, 10)
+                elif self.ns2dtime:
+                    for t in range(0, 10):
+                        sample['y'] = y[..., t:t+1]
+                        if t == 0:
+                            xx = sample['x']
+                        x = xx
+                        sample['x'] = x.permute(0, 3, 1, 2)
+                        out = self.model(**sample).permute(0, 2, 3, 1)
+                        sample['y'] = sample['y'].view(batch, -1)
+                        loss1 += loss_dict["h1"](out.view(batch, -1), **sample)
+                        loss2 += loss_dict["l2"](out.view(batch, -1), **sample)
+                        if t == 0:
+                            pred = out
+                        else:
+                            pred = torch.cat((pred, out), -1)
+                        xx = torch.cat((xx[..., 1:], out), dim=-1)
+                else:
+                    out = self.model(**sample)
 
                 if self.data_processor is not None:
                     out, sample = self.data_processor.postprocess(out, sample)
@@ -296,7 +356,16 @@ class Trainer:
                             val_loss = self.callbacks.compute_training_loss(**out, **sample)
                     else:
                         if isinstance(out, torch.Tensor):
-                            val_loss = loss(out, **sample)
+                            if self.nstime:
+                                sample['y'] = sample['y'].view(batch, -1)
+                                val_loss = loss(out.view(batch, -1), **sample)
+                            elif self.ns2dtime:
+                                if loss_name == "h1":
+                                    val_loss = loss1
+                                else:
+                                    val_loss = loss2
+                            else:
+                                val_loss = loss(out, **sample)
                         elif isinstance(out, dict):
                             val_loss = loss(out, **sample)
                         if val_loss.shape == ():
@@ -317,3 +386,12 @@ class Trainer:
 
         return errors
 
+    def get_grid(self, shape, device):
+        batchsize, size_x, size_y, size_z = shape[0], shape[1], shape[2], shape[3]
+        gridx = torch.tensor(np.linspace(0, 1, size_x), dtype=torch.float)
+        gridx = gridx.reshape(1, size_x, 1, 1, 1).repeat([batchsize, 1, size_y, size_z, 1])
+        gridy = torch.tensor(np.linspace(0, 1, size_y), dtype=torch.float)
+        gridy = gridy.reshape(1, 1, size_y, 1, 1).repeat([batchsize, size_x, 1, size_z, 1])
+        gridz = torch.tensor(np.linspace(0, 1, size_z), dtype=torch.float)
+        gridz = gridz.reshape(1, 1, 1, size_z, 1).repeat([batchsize, size_x, size_y, 1, 1])
+        return torch.cat((gridx, gridy, gridz), dim=-1).to(device)

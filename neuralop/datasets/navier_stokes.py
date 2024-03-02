@@ -1,10 +1,12 @@
 import torch
 from pathlib import Path
 
-from .output_encoder import UnitGaussianNormalizer
+#from .output_encoder import UnitGaussianNormalizer
+from neuralop.utils import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
 from .transforms import PositionalEmbedding2D
 from .data_transforms import DefaultDataProcessor
+import scipy.io
 
 # from .hdf5_dataset import H5pyDataset
 
@@ -230,6 +232,61 @@ def load_ns_high(data_path, ntrain=8, ntest=2, subsampling_rate=1, batch_size=50
     train_loader = torch.utils.data.DataLoader(train_db, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
     test_loader = torch.utils.data.DataLoader(test_db,batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
     test_loaders =  {256: test_loader}
+    for (res, n_test, test_batch_size) in zip(test_resolutions, n_tests, test_batch_sizes):
+        print(f'Loading test db at resolution {res} with {n_test} samples and batch-size={test_batch_size}')
+        x_test, y_test = x_test, y_test
+
+        test_db = TensorDataset(x_test, y_test)
+        test_loader = torch.utils.data.DataLoader(test_db,
+                                                  batch_size=test_batch_size, shuffle=False,
+                                                  num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
+        test_loaders[res] = test_loader
+
+    data_processor = None
+    return train_loader, test_loaders, data_processor
+
+def load_ns_time(train_path, test_path, ntrain=1000, ntest=200, subsampling_rate=1, channel_dim = 1, batch_size=32, T = 10, time = False, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True):
+        
+    data_train = scipy.io.loadmat(train_path)
+    data_test = scipy.io.loadmat(test_path)
+    rate = subsampling_rate
+
+    T_in = 10
+    T = T
+    S = 64//rate
+
+    x_train = torch.tensor(data_train['u'], dtype=torch.float)[:ntrain, ::rate, ::rate, :T_in]
+    y_train = torch.tensor(data_train['u'], dtype=torch.float)[:ntrain, ::rate, ::rate, T_in:T+T_in]#.unsqueeze(channel_dim)
+
+    x_test = torch.tensor(data_test['u'], dtype=torch.float)[-ntest:, ::rate, ::rate,:T_in]
+    y_test = torch.tensor(data_test['u'], dtype=torch.float)[-ntest:, ::rate, ::rate,T_in:T+T_in]#.unsqueeze(channel_dim)
+    
+    if time:
+        x_train = x_train.reshape(ntrain, S, S, T_in)#.unsqueeze(channel_dim)
+        x_test = x_test.reshape(ntest, S, S, T_in)#.unsqueeze(channel_dim)
+    else:
+        x_normalizer = UnitGaussianNormalizer(x_train)
+        x_train = x_normalizer.encode(x_train)
+        x_test = x_normalizer.encode(x_test)
+
+        y_normalizer = UnitGaussianNormalizer(y_train)
+        y_train = y_normalizer.encode(y_train)
+
+        x_train = x_train.reshape(ntrain, S, S, 1, T_in).repeat([1,1,1,T,1])
+        x_test = x_test.reshape(ntest, S, S, 1, T_in).repeat([1,1,1,T,1])
+
+    del data_train
+    del data_test
+
+    train_db = TensorDataset(x_train, y_train)
+    test_db = TensorDataset(x_test, y_test)
+    
+    test_resolutions = [64]
+    n_tests = [100]
+    test_batch_sizes = [32]
+    train_loader = torch.utils.data.DataLoader(train_db, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
+    test_loader = torch.utils.data.DataLoader(test_db,batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
+    test_loaders =  {64: test_loader}
     for (res, n_test, test_batch_size) in zip(test_resolutions, n_tests, test_batch_sizes):
         print(f'Loading test db at resolution {res} with {n_test} samples and batch-size={test_batch_size}')
         x_test, y_test = x_test, y_test

@@ -10,5 +10,5 @@
 # set up for problem & define any environment variables here
 module load conda
 conda activate myenv
-python train_navier_stokes-high.py
+python train_navier_stokes-3d.py
 #& CUDA_VISIBLE_DEVICES=3 python train_darcy.py --incremental.incremental_res=True
