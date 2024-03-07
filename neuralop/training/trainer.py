@@ -81,8 +81,8 @@ class Trainer:
         self.amp_autocast = amp_autocast
         self.data_processor = data_processor
         self.incremental_resolution = False
-        self.nstime = False
-        self.ns2dtime = True
+        self.nstime = True
+        self.ns2dtime = False
         # If the data_processor is an IncrementalDataProcessor, then we need to do curriculum learning - Increase the resolution of the samples incrementally
         if type(self.data_processor).__name__ == "IncrementalDataProcessor":
             self.incremental_resolution = True
@@ -218,7 +218,7 @@ class Trainer:
                             if self.nstime:
                                 sample['y'] = sample['y'].view(batch, -1)
                                 loss = training_loss(out.view(batch, -1), **sample)
-                            if self.ns2dtime:
+                            elif self.ns2dtime:
                                 loss += loss1
                             else:
                                 loss = training_loss(out.float(), **sample)

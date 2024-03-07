@@ -17,7 +17,6 @@ from neuralop.training.callbacks import IncrementalCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.datasets import data_transforms
 
-
 # Read the configuration
 config_name = "default"
 pipe = ConfigPipeline(
@@ -69,6 +68,7 @@ if config.wandb.log and is_logger:
 
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
+torch.manual_seed(config.seed)
 
 # Print config to screen
 if config.verbose:
@@ -78,6 +78,8 @@ if config.verbose:
 train_path = "/pscratch/sd/r/rgeorge/data/NavierStokes_V1e-5_N1200_T20.mat"
 test_path = "/pscratch/sd/r/rgeorge/data/NavierStokes_V1e-5_N1200_T20.mat"
 # Loading the Navier-Stokes dataset in 128x128 resolution
+# full data 1000, 200
+# low data 250, 50
 train_loader, test_loaders, data_processor = load_ns_time(train_path, test_path, ntrain=1000, ntest=200, channel_dim = 1, subsampling_rate=1, batch_size=32, T = 10, time = True, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
@@ -93,13 +95,15 @@ if data_processor is not None:
     data_processor = data_processor.to(device)
 #model = get_model(config)
 #model = model.to(device)
+modes = config.mode
+s1 = tuple([modes, modes])
 if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
     s = (2,2)
 else:
-    s = (90,90)
+    s = s1
     
 model = FNO(
-    max_n_modes=(90, 90),
+    max_n_modes=s1,
     n_modes=s,
     hidden_channels=128,
     in_channels=10,

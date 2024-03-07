@@ -74,6 +74,8 @@ config.verbose = config.verbose and is_logger
 if config.verbose:
     pipe.log()
     sys.stdout.flush()
+    
+torch.manual_seed(config.seed)
 
 train_path = "/pscratch/sd/r/rgeorge/data/NavierStokes_V1e-5_N1200_T20.mat"
 test_path = "/pscratch/sd/r/rgeorge/data/NavierStokes_V1e-5_N1200_T20.mat"
@@ -93,13 +95,16 @@ if data_processor is not None:
     data_processor = data_processor.to(device)
 #model = get_model(config)
 #model = model.to(device)
+modes = config.mode
+s1 = tuple([modes, modes, modes])
+
 if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
     s = (2,2,2)
 else:
-    s = (30,30,30)
+    s = s1
     
 model = FNO(
-    max_n_modes=(30, 30, 30),
+    max_n_modes=s1,
     n_modes=s,
     hidden_channels=128,
     in_channels=13,

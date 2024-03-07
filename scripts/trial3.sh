@@ -10,4 +10,7 @@
 # set up for problem & define any environment variables here
 module load conda
 conda activate myenv
-CUDA_VISIBLE_DEVICES=0 python train_navier_stokes-time.py --incremental.incremental_res=True & CUDA_VISIBLE_DEVICES=1 python train_navier_stokes-time.py
+for s in 0 1 2;
+do
+    CUDA_VISIBLE_DEVICES=0 python train_navier_stokes-3d.py --incremental.incremental_res=True --incremental.epoch_gap=150 --seed=$s & CUDA_VISIBLE_DEVICES=1 python train_navier_stokes-3d.py --incremental.incremental_res=True --seed=$s & CUDA_VISIBLE_DEVICES=2 python train_navier_stokes-3d.py --incremental.incremental_grad=True --seed=$s & CUDA_VISIBLE_DEVICES=3 python train_navier_stokes-3d.py --incremental.incremental_loss_gap=True --seed=$s
+done
