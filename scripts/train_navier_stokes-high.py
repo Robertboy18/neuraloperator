@@ -69,6 +69,7 @@ if config.wandb.log and is_logger:
 
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
+torch.manual_seed(config.seed)
 
 # Print config to screen
 if config.verbose:
@@ -92,13 +93,15 @@ if data_processor is not None:
     data_processor = data_processor.to(device)
 #model = get_model(config)
 #model = model.to(device)
+modes = config.mode
+s1 = tuple([modes, modes])
 if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
     s = (2,2)
 else:
-    s = (90,90)
+    s = s1
     
 model = FNO(
-    max_n_modes=(90, 90),
+    max_n_modes=s1,
     n_modes=s,
     hidden_channels=128,
     in_channels=1,
