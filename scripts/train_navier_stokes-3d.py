@@ -16,7 +16,9 @@ from neuralop.models import FNO
 from neuralop.training.callbacks import IncrementalCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.datasets import data_transforms
+import os
 
+os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/robert_wandb/")
 
 # Read the configuration
 config_name = "default"
