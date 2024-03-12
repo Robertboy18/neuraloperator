@@ -69,6 +69,7 @@ else:
     wandb_init_args = None
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
+torch.manual_seed(config.seed)
 
 # Print config to screen
 if config.verbose:
@@ -77,18 +78,22 @@ if config.verbose:
 
 # Load the Burgers dataset
 data_path = "/pscratch/sd/r/rgeorge/data/burgers_data_R10.mat"
-train_loader, test_loaders = load_burgers_mat(data_path, 1000, 100)
+#full data - 1000, 100
+#low data - 250, 50
+train_loader, test_loaders = load_burgers_mat(data_path, 250, 50)
 output_encoder = None
 #model = get_model(config)
 #model = model.to(device)
+modes = config.mode
+s1 = tuple([modes, ])
 
 if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
     s = (2,)
 else:
-    s = (90,)
+    s = s1
     
 model = FNO(
-    max_n_modes=(90,),
+    max_n_modes=s1,
     n_modes=s,
     hidden_channels=128,
     in_channels=2,
@@ -128,7 +133,7 @@ if config.incremental.incremental_res:
         out_normalizer=None,
         positional_encoding=None,
         device=device,
-        dataset_sublist=config.incremental.sub_list1,
+        dataset_sublist=config.incremental.sublist1,
         dataset_resolution=8192,
         dataset_indices=[2],
         epoch_gap=config.incremental.epoch_gap,
@@ -210,6 +215,7 @@ if tr:
                                            in_normalizer=output_encoder,
                                            out_normalizer=output_encoder)
 
+print("CALLBACKS", callbacks)
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,

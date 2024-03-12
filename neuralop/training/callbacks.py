@@ -558,16 +558,13 @@ class IncrementalCallback(Callback):
         self.ndim = len(self.state_dict['model'].fno_blocks.convs.n_modes)
         # method 1: loss_gap
         incremental_modes = self.state_dict['model'].fno_blocks.convs.n_modes[0]
-        print(self.state_dict['model'].fno_blocks.convs.n_modes)
         max_modes = self.state_dict['model'].fno_blocks.convs.max_n_modes[0]
         if len(self.loss_list) > 1:
             if abs(self.loss_list[-1] - self.loss_list[-2]) <= self.incremental_loss_eps:
-                print("ENTERING")
                 if incremental_modes < max_modes:
-                    incremental_modes += 1
-                print(incremental_modes)
+                    incremental_modes = incremental_modes*2 + 1
         modes_list = (incremental_modes, )
-        self.state_dict['model'].fno_blocks.convs.n_modes = [incremental_modes]
+        self.state_dict['model'].fno_blocks.convs.n_modes = modes_list
 
     # Algorithm 2: Gradient based explained ratio
     def grad_explained(self):
@@ -584,7 +581,7 @@ class IncrementalCallback(Callback):
             self.accumulated_grad += self.state_dict['model'].fno_blocks.convs.weight[0]
         else:
             incremental_final = []
-            for i in range(self.ndim):
+            for i in range(1):
                 max_modes = self.state_dict['model'].fno_blocks.convs.max_n_modes[i]
                 incremental_modes = self.state_dict['model'].fno_blocks.convs.n_modes[i]
                 weight = self.accumulated_grad
@@ -598,7 +595,7 @@ class IncrementalCallback(Callback):
                     incremental_modes - self.incremental_buffer, torch.Tensor(strength_vector))
                 if expained_ratio < self.incremental_grad_eps:
                     if incremental_modes < max_modes:
-                        incremental_modes += 1
+                        incremental_modes = incremental_modes*2 + 1
                 incremental_final.append(incremental_modes)
 
             # update the modes and frequency dimensions
@@ -606,9 +603,9 @@ class IncrementalCallback(Callback):
             self.accumulated_grad = torch.zeros_like(
                 self.state_dict['model'].fno_blocks.convs.weight[0])
             main_modes = incremental_final[0]
-            modes_list = tuple([main_modes] * self.ndim)
-            self.state_dict['model'].fno_blocks.convs.n_modes = tuple(modes_list)
-    
+            modes_list = (incremental_modes, )
+            self.state_dict['model'].fno_blocks.convs.n_modes = modes_list
+            
     def compute_rank(self, tensor):
         # Compute the matrix rank of a tensor
         rank = torch.matrix_rank(tensor).cpu()
