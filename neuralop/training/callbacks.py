@@ -562,8 +562,9 @@ class IncrementalCallback(Callback):
         if len(self.loss_list) > 1:
             if abs(self.loss_list[-1] - self.loss_list[-2]) <= self.incremental_loss_eps:
                 if incremental_modes < max_modes:
-                    incremental_modes = incremental_modes*2 + 1
-        modes_list = (incremental_modes, )
+                    incremental_modes += 1
+        #modes_list = (incremental_modes, ) for 1 d
+        modes_list = (incremental_modes, incremental_modes)
         self.state_dict['model'].fno_blocks.convs.n_modes = modes_list
 
     # Algorithm 2: Gradient based explained ratio
@@ -581,7 +582,7 @@ class IncrementalCallback(Callback):
             self.accumulated_grad += self.state_dict['model'].fno_blocks.convs.weight[0]
         else:
             incremental_final = []
-            for i in range(1):
+            for i in range(self.ndim):
                 max_modes = self.state_dict['model'].fno_blocks.convs.max_n_modes[i]
                 incremental_modes = self.state_dict['model'].fno_blocks.convs.n_modes[i]
                 weight = self.accumulated_grad
@@ -595,7 +596,7 @@ class IncrementalCallback(Callback):
                     incremental_modes - self.incremental_buffer, torch.Tensor(strength_vector))
                 if expained_ratio < self.incremental_grad_eps:
                     if incremental_modes < max_modes:
-                        incremental_modes = incremental_modes*2 + 1
+                        incremental_modes += 1 #incremental_modes*2 + 1
                 incremental_final.append(incremental_modes)
 
             # update the modes and frequency dimensions
@@ -603,7 +604,7 @@ class IncrementalCallback(Callback):
             self.accumulated_grad = torch.zeros_like(
                 self.state_dict['model'].fno_blocks.convs.weight[0])
             main_modes = incremental_final[0]
-            modes_list = (incremental_modes, )
+            modes_list = (incremental_modes, incremental_modes)
             self.state_dict['model'].fno_blocks.convs.n_modes = modes_list
             
     def compute_rank(self, tensor):

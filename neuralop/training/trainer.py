@@ -171,7 +171,7 @@ class Trainer:
 
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
-
+                
                 loss = 0.
 
                 if self.overrides_loss:

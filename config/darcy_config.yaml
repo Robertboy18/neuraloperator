@@ -54,7 +54,7 @@ default: &DEFAULT
     scheduler_T_max: 500 # For cosine only, typically take n_epochs
     scheduler_patience: 5 # For ReduceLROnPlateau only
     scheduler: 'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
-    step_size: 60
+    step_size: 50
     gamma: 0.5
 
   # Dataset related
@@ -82,14 +82,18 @@ default: &DEFAULT
     incremental_res: False
     grad_eps: 0.99999
     max_iter: 1
-    loss_eps: 0.001
+    loss_eps: 0.01
     grad_max: 2
     epoch_gap: 150
 
+  mode: 90
+  seed: 0
+  dim: 3
+  
   # Weights and biases
   wandb:
     log: True
-    name: "darcy-final-rerun-joint-loss" # If None, config will be used but you can override it here
+    name: "darcy-final-rerun1-low-data" # If None, config will be used but you can override it here
     group: '' 
     project: "darcy"
     entity: "research-pino_ifno" # put your username here

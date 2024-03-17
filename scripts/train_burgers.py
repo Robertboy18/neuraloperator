@@ -215,7 +215,6 @@ if tr:
                                            in_normalizer=output_encoder,
                                            out_normalizer=output_encoder)
 
-print("CALLBACKS", callbacks)
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,

@@ -14,7 +14,9 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.models import FNO
 from neuralop.training.callbacks import IncrementalCallback
 from neuralop.datasets import data_transforms
+import os
 
+os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/wandb")
 
 # Read the configuration
 config_name = "default"
@@ -67,6 +69,7 @@ if config.wandb.log and is_logger:
 
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
+torch.manual_seed(config.seed)
 
 # Print config to screen
 if config.verbose and is_logger:
@@ -76,7 +79,9 @@ if config.verbose and is_logger:
 TRAIN_PATH = '/pscratch/sd/r/rgeorge/data/piececonst_r421_N1024_smooth1.mat'
 TEST_PATH = 'pscratch/sd/r/rgeorge/data/piececonst_r421_N1024_smooth2.mat'
 
-train_loader, test_loaders, data_processor = load_darcy_pt(TRAIN_PATH, 800, [200]
+# faull data 800, 200
+# low data 250, 50
+train_loader, test_loaders, data_processor = load_darcy_pt(TRAIN_PATH, 250, [50]
                                                 ,train_resolution=421, test_resolutions=[421], batch_size=32, test_batch_sizes=[32], positional_encoding=True, encode_input=False, encode_output=True, encoding='channel-wise', channel_dim=1)
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
@@ -89,16 +94,19 @@ if config.patching.levels > 0:
                                              levels=config.patching.levels)
 data_transform = data_processor.to(device)
 
+modes = config.mode
+s1 = tuple([modes, modes])
+
 if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
     s = (2,2)
 else:
-    s = (90,90)
+    s = s1
     
 model = FNO(
-    max_n_modes=(90, 90),
+    max_n_modes=s1,
     n_modes=s,
     hidden_channels=128,
-    in_channels=2,
+    in_channels=config.dim,
     out_channels=1,
 )
 
