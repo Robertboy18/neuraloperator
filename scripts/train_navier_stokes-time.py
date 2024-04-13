@@ -41,7 +41,7 @@ wandb_init_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
-        wandb_name = config.wandb.name
+        wandb_name = "navierstokes-2d-time-final-rerun-low-data"
     else:
         wandb_name = "_".join(
             f"{var}"
@@ -82,7 +82,7 @@ test_path = "/pscratch/sd/r/rgeorge/data/NavierStokes_V1e-5_N1200_T20.mat"
 # Loading the Navier-Stokes dataset in 128x128 resolution
 # full data 1000, 200
 # low data 250, 50
-train_loader, test_loaders, data_processor = load_ns_time(train_path, test_path, ntrain=1000, ntest=200, channel_dim = 1, subsampling_rate=1, batch_size=32, T = 10, time = True, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
+train_loader, test_loaders, data_processor = load_ns_time(train_path, test_path, ntrain=250, ntest=50, channel_dim = 1, subsampling_rate=1, batch_size=32, T = 10, time = True, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
@@ -195,7 +195,7 @@ if config.verbose:
     print(f"\n * Test: {eval_losses}")
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
-s
+
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
@@ -207,7 +207,9 @@ trainer = Trainer(
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,
-    wandb_log = config.wandb.log
+    wandb_log = config.wandb.log,
+    ns2dtime=config.ns2dtime,
+    nstime=config.nstime
 )
 
 # Log parameter count

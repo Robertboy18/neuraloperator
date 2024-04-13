@@ -42,7 +42,7 @@ wandb_init_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
-        wandb_name = config.wandb.name
+        wandb_name = "navierstokes-high-final-rerun-low-data"
     else:
         wandb_name = "_".join(
             f"{var}"
@@ -80,7 +80,9 @@ if config.verbose:
 
 data_path = "/pscratch/sd/r/rgeorge/data/vorticty3.pt"
 # Loading the Navier-Stokes dataset in 128x128 resolution
-train_loader, test_loaders, data_processor = load_ns_high(data_path, ntrain=8, ntest=2, subsampling_rate=1, batch_size=50, T = 5000, in_dim = 1, out_dim = 1, ntimeindex = 1, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
+# full data T = 5000
+# low data T = 50
+train_loader, test_loaders, data_processor = load_ns_high(data_path, ntrain=8, ntest=2, subsampling_rate=1, batch_size=50, T = 50, in_dim = 1, out_dim = 1, ntimeindex = 1, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
@@ -193,7 +195,7 @@ if config.verbose:
     print(f"\n * Test: {eval_losses}")
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
-s
+
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,

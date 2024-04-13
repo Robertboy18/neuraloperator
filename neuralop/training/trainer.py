@@ -21,6 +21,8 @@ class Trainer:
                  log_output=False, 
                  use_distributed=False, 
                  verbose=False, 
+                 nstime=False,
+                 ns2dtime=False,
                  ):
         """
         A general Trainer class to train neural-operators on given datasets
@@ -81,8 +83,8 @@ class Trainer:
         self.amp_autocast = amp_autocast
         self.data_processor = data_processor
         self.incremental_resolution = False
-        self.nstime = False
-        self.ns2dtime = False
+        self.nstime = nstime
+        self.ns2dtime = ns2dtime
         # If the data_processor is an IncrementalDataProcessor, then we need to do curriculum learning - Increase the resolution of the samples incrementally
         if type(self.data_processor).__name__ == "IncrementalDataProcessor":
             self.incremental_resolution = True

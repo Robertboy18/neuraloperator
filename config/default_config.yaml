@@ -96,7 +96,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: "navierstokes-high-final-rerun" # If None, config will be used but you can override it here
+    name: "navierstokes-3d-final-rerun" # If None, config will be used but you can override it here
     group: '' 
     project: "navier-stokes"
     entity: "research-pino_ifno" # put your username here
@@ -105,7 +105,9 @@ default: &DEFAULT
     log_test_interval: 1
 
   seed: 0
-  mode: 30
+  mode: 9s0
+  nstime: False
+  ns2dtime: False
   
 original_fno:
   arch: 'tfno2d'
