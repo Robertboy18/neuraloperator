@@ -17,18 +17,20 @@ from neuralop.utils import count_model_params
 from neuralop.training.callbacks import IncrementalCallback
 from neuralop.datasets import data_transforms
 from neuralop import LpLoss, H1Loss
+from neuralop.training import AdamW
 
 
 # %%
 # Loading the Darcy flow dataset
+"""
 train_loader, test_loaders, output_encoder = load_darcy_flow_small(
-    n_train=100,
+    n_train=2,
     batch_size=16,
     test_resolutions=[16, 32],
-    n_tests=[100, 50],
+    n_tests=[2, 2],
     test_batch_sizes=[32, 32],
 )
-
+"""
 # %%
 # Choose device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -37,24 +39,40 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Set up the incremental FNO model
 # We start with 2 modes in each dimension
 # We choose to update the modes by the incremental gradient explained algorithm
+
 starting_modes = (2, 2)
 incremental = True
 
 # %%
 # set up model
 model = FNO(
-    max_n_modes=(16, 16),
+    max_n_modes=(2, 2),
     n_modes=starting_modes,
-    hidden_channels=32,
+    hidden_channels=2,
     in_channels=1,
     out_channels=1,
+    n_layers=1
 )
 model = model.to(device)
 n_params = count_model_params(model)
 
+print(model)
+print([p for p in model.parameters()])
 # %%
 # Set up the optimizer and scheduler
-optimizer = torch.optim.Adam(model.parameters(), lr=8e-3, weight_decay=1e-4)
+#optimizer = torch.optim.Adam(model.parameters(), lr=8e-3, weight_decay=1e-4)
+# make parameters with "rank" to a single group, if param_name has "mlp" or "attn"
+galore_params = []
+for i in range(1):
+    galore_params.append(model.fno_blocks.convs.weight[i])
+id_galore_params = [id(p) for p in galore_params]
+print(galore_params[0])
+# make parameters without "rank" to another group
+regular_params = [p for p in model.parameters() if id(p) not in id_galore_params]
+# then call galore_adamw
+param_groups = [{'params': regular_params}, 
+                {'params': galore_params, 'rank': 256 , 'update_proj_gap': 1, 'scale': 0.25}]
+optimizer = AdamW(param_groups, lr=8e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 
@@ -114,8 +132,8 @@ sys.stdout.flush()
 # One can use multiple Callbacks as well
 callbacks = [
     IncrementalCallback(
-        incremental_loss_gap=False,
-        incremental_grad=True,
+        incremental_loss_gap=True,
+        incremental_grad=False,
         incremental_grad_eps=0.9999,
         incremental_buffer=5,
         incremental_max_iter=1,
@@ -156,41 +174,3 @@ trainer.train(
 # ii) can be trained quickly on CPU
 #
 # In practice we would train a Neural Operator on one or multiple GPUs
-
-test_samples = test_loaders[32].dataset
-
-fig = plt.figure(figsize=(7, 7))
-for index in range(3):
-    data = test_samples[index]
-    # Input x
-    x = data["x"].to(device)
-    # Ground-truth
-    y = data["y"].to(device)
-    # Model prediction
-    out = model(x.unsqueeze(0))
-    ax = fig.add_subplot(3, 3, index * 3 + 1)
-    x = x.cpu().squeeze().detach().numpy()
-    y = y.cpu().squeeze().detach().numpy()
-    ax.imshow(x, cmap="gray")
-    if index == 0:
-        ax.set_title("Input x")
-    plt.xticks([], [])
-    plt.yticks([], [])
-
-    ax = fig.add_subplot(3, 3, index * 3 + 2)
-    ax.imshow(y.squeeze())
-    if index == 0:
-        ax.set_title("Ground-truth y")
-    plt.xticks([], [])
-    plt.yticks([], [])
-
-    ax = fig.add_subplot(3, 3, index * 3 + 3)
-    ax.imshow(out.cpu().squeeze().detach().numpy())
-    if index == 0:
-        ax.set_title("Model prediction")
-    plt.xticks([], [])
-    plt.yticks([], [])
-
-fig.suptitle("Inputs, ground-truth output and prediction.", y=0.98)
-plt.tight_layout()
-fig.show()

@@ -19,7 +19,7 @@ from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
-device = 'cpu'
+device = 'cuda'
 
 
 # %%
@@ -107,41 +107,3 @@ trainer.train(train_loader=train_loader,
 # ii) can be trained quickly on CPU
 #
 # In practice we would train a Neural Operator on one or multiple GPUs
-
-test_samples = test_loaders[32].dataset
-
-fig = plt.figure(figsize=(7, 7))
-for index in range(3):
-    data = test_samples[index]
-    data = data_processor.preprocess(data, batched=False)
-    # Input x
-    x = data['x']
-    # Ground-truth
-    y = data['y']
-    # Model prediction
-    out = model(x.unsqueeze(0))
-
-    ax = fig.add_subplot(3, 3, index*3 + 1)
-    ax.imshow(x[0], cmap='gray')
-    if index == 0: 
-        ax.set_title('Input x')
-    plt.xticks([], [])
-    plt.yticks([], [])
-
-    ax = fig.add_subplot(3, 3, index*3 + 2)
-    ax.imshow(y.squeeze())
-    if index == 0: 
-        ax.set_title('Ground-truth y')
-    plt.xticks([], [])
-    plt.yticks([], [])
-
-    ax = fig.add_subplot(3, 3, index*3 + 3)
-    ax.imshow(out.squeeze().detach().numpy())
-    if index == 0: 
-        ax.set_title('Model prediction')
-    plt.xticks([], [])
-    plt.yticks([], [])
-
-fig.suptitle('Inputs, ground-truth output and prediction.', y=0.98)
-plt.tight_layout()
-fig.show()
