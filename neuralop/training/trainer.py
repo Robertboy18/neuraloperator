@@ -7,7 +7,36 @@ from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
 import numpy as np
+# (c) Meta Platforms, Inc. and affiliates. 
+import logging
+import socket
+from datetime import datetime, timedelta
 
+import torch
+
+from torch.autograd.profiler import record_function
+
+logging.basicConfig(
+   format="%(levelname)s:%(asctime)s %(message)s",
+   level=logging.INFO,
+   datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger: logging.Logger = logging.getLogger(__name__)
+logger.setLevel(level=logging.INFO)
+
+TIME_FORMAT_STR: str = "%b_%d_%H_%M_%S"
+
+def trace_handler(prof: torch.profiler.profile):
+   # Prefix for file names.
+   host_name = socket.gethostname()
+   timestamp = datetime.now().strftime(TIME_FORMAT_STR)
+   file_prefix = f"{host_name}_{timestamp}"
+
+   # Construct the trace file.
+   prof.export_chrome_trace(f"{file_prefix}.json.gz")
+
+   # Construct the memory timeline file.
+   prof.export_memory_timeline(f"{file_prefix}.html", device="cuda:0")
 class Trainer:
     def __init__(self, *, 
                  model, 
@@ -134,8 +163,28 @@ class Trainer:
 
         errors = None
 
+        """
+        with torch.profiler.profile(
+            activities=[
+                torch.profiler.ProfilerActivity.CPU,
+                torch.profiler.ProfilerActivity.CUDA,
+            ],
+            # In this example with wait=1, warmup=1, active=2, repeat=1,
+            # profiler will skip the first step/iteration,
+            # start warming up on the second, record
+            # the third and the forth iterations,
+            # after which the trace will become available
+            # and on_trace_ready (when set) is called;
+            # the cycle repeats starting with the next step
+            schedule=torch.profiler.schedule(wait=0, warmup=1, active=6, repeat=1),
+            record_shapes=True,
+            profile_memory=True,
+            with_stack=True,
+            on_trace_ready=trace_handler,
+        ) as prof:
+        """
         for epoch in range(self.n_epochs):
-
+            #prof.step()
             if self.callbacks:
                 self.callbacks.on_epoch_start(epoch=epoch)
 
@@ -150,7 +199,6 @@ class Trainer:
                 if self.callbacks:
                     self.callbacks.on_batch_start(idx=idx, sample=sample)
 
-                optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
 
@@ -172,6 +220,7 @@ class Trainer:
                     sample['x'] = torch.cat((x, grid), dim=-1).permute(0, 4, 1, 2, 3)
                 
                 loss1 = 0.
+                #with record_function("## forward ##"):
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
                         out  = self.model(**sample)
@@ -228,11 +277,12 @@ class Trainer:
                             loss += training_loss(**out, **sample)
                 if regularizer:
                     loss += regularizer.loss
-                
+                #with record_function("## backward ##"):  
                 loss.backward()
                 del out
-
+                #with record_function("## optimizer ##"):
                 optimizer.step()
+                optimizer.zero_grad(set_to_none=True)
                 train_err += loss.item()
         
                 with torch.no_grad():
@@ -243,6 +293,7 @@ class Trainer:
                 if self.callbacks:
                     self.callbacks.on_batch_end()
 
+            #with record_function("## scheduler ##"):
             if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(train_err)
             else:
@@ -257,7 +308,7 @@ class Trainer:
 
                 if self.callbacks:
                     self.callbacks.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
-                                           avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
+                                        avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
                 
 
                 for loader_name, loader in test_loaders.items():
@@ -268,7 +319,7 @@ class Trainer:
             
             if self.callbacks:
                 self.callbacks.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
-
+        #rof.export_memory_timeline(f"trial2.html", device="cuda:0")
         return errors
 
     def evaluate(self, loss_dict, data_loader,

@@ -86,10 +86,14 @@ default: &DEFAULT
     grad_max: 2
     epoch_gap: 50
 
+  galore: True
+  scale: 0.25
+  rank: 0.1
+  
   # Weights and biases
   wandb:
     log: True
-    name: "darcy-final-rerun-loss" # If None, config will be used but you can override it here
+    name: "darcy-galore-cp" # If None, config will be used but you can override it here
     group: '' 
     project: "darcy"
     entity: "research-pino_ifno" # put your username here

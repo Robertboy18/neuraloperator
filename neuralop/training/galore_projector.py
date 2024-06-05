@@ -1,5 +1,5 @@
 import torch
-from tensorly.decomposition import tucker
+from tensorly.decomposition import tucker, CP
 from tensorly import tenalg 
 
 class GaLoreProjectorTensor:
@@ -35,7 +35,7 @@ class GaLoreProjectorTensor:
             matrix = module_params.data.float()
         else:
             matrix = module_params.data
-        tucker_tensor = tucker(matrix, rank=rank1)
+        tucker_tensor = CP(matrix, rank=rank1)
         return tucker_tensor
 
     def transform(self, tensor, x):
@@ -55,9 +55,14 @@ class GaLoreProjector:
         self.scale = scale
         self.ortho_matrix = None
         self.proj_type = proj_type
+        self.shape = None
         
     def project(self, full_rank_grad, iter):
-        
+        if len(full_rank_grad.shape) > 2:
+            # rehsape the tensor into a matrix
+            # save the shapes so we can use it later
+            self.shape = full_rank_grad.shape
+            full_rank_grad = full_rank_grad.view(full_rank_grad.shape[0], -1)
         if self.proj_type == 'std':
             if full_rank_grad.shape[0] >= full_rank_grad.shape[1]:
                 if self.ortho_matrix is None or iter % self.update_proj_gap == 0:
@@ -110,7 +115,8 @@ class GaLoreProjector:
         elif self.proj_type == 'full':
             full_rank_grad = torch.matmul(self.ortho_matrix[0], low_rank_grad) @ self.ortho_matrix[1]
         
-        
+        if self.shape is not None:
+            full_rank_grad = full_rank_grad.view(self.shape)
         return full_rank_grad * self.scale
         
         

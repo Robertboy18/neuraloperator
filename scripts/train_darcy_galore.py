@@ -14,6 +14,7 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.models import FNO
 from neuralop.training.callbacks import IncrementalCallback
 from neuralop.datasets import data_transforms
+from neuralop.training import AdamW
 
 
 # Read the configuration
@@ -73,8 +74,8 @@ if config.verbose and is_logger:
     pipe.log()
     sys.stdout.flush()
 
-TRAIN_PATH = '/raid/robert/data/piececonst_r421_N1024_smooth1.mat'
-TEST_PATH = '/raid/robert/data/piececonst_r421_N1024_smooth2.mat'
+TRAIN_PATH = '/raid/robert/piececonst_r421_N1024_smooth1.mat'
+TEST_PATH = '/raid/robert/piececonst_r421_N1024_smooth1.mat'
 
 train_loader, test_loaders, data_processor = load_darcy_pt(TRAIN_PATH, 800, [200]
                                                 ,train_resolution=421, test_resolutions=[421], batch_size=32, test_batch_sizes=[32], positional_encoding=True, encode_input=False, encode_output=True, encoding='channel-wise', channel_dim=1)
@@ -92,14 +93,14 @@ data_transform = data_processor.to(device)
 if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
     s = (2,2)
 else:
-    s = (20,20)
+    s = (90,90)
     
 model = FNO(
-    max_n_modes=(20, 20),
+    max_n_modes=(90, 90),
     n_modes=s,
     hidden_channels=128,
     in_channels=3,
-    out_channels=3,
+    out_channels=1,
 )
 
 #get_model(config)
@@ -137,12 +138,27 @@ if config.incremental.incremental_res:
         verbose=True,
     ).to(device)
 
-# Create the optimizer
-optimizer = torch.optim.Adam(
-    model.parameters(),
-    lr=config.opt.learning_rate,
-    weight_decay=config.opt.weight_decay,
-)
+if config.galore:
+    galore_params = []
+    galore_params.extend(list(model.fno_blocks.convs.parameters()))
+    print(galore_params[0].shape, galore_params[1].shape, galore_params[2].shape, galore_params[3].shape)
+    galore_params.pop(0)
+    id_galore_params = [id(p) for p in galore_params]
+    # make parameters without "rank" to another group
+    regular_params = [p for p in model.parameters() if id(p) not in id_galore_params]
+    # then call galore_adamw
+    param_groups = [{'params': regular_params}, 
+                    {'params': galore_params, 'type': "cp", 'rank': config.rank , 'update_proj_gap': 50, 'scale': config.scale, 'proj_type': "std", 'dim': 5}]
+    param_groups1 = [{'type': "cp", 'rank': config.rank , 'update_proj_gap': 50, 'scale': config.scale, 'proj_type': "std", 'dim': 5}]
+    optimizer = AdamW(param_groups, lr=5e-3)
+else:
+    # Create the optimizer
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=config.opt.learning_rate,
+        weight_decay=config.opt.weight_decay,
+    )
+    param_groups1 = [{'rank': 'baseline'}]
 
 if config.opt.scheduler == "ReduceLROnPlateau":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -214,6 +230,7 @@ if is_logger:
             to_log["n_params_baseline"] = (config.n_params_baseline,)
             to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
             to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
+        wandb.log(param_groups1[0])
         wandb.log(to_log)
         wandb.watch(model)
 
