@@ -35,7 +35,7 @@ class GaLoreProjectorTensor:
             matrix = module_params.data.float()
         else:
             matrix = module_params.data
-        tucker_tensor = CP(matrix, rank=rank1)
+        tucker_tensor = tucker(matrix, rank=rank1)
         return tucker_tensor
 
     def transform(self, tensor, x):
