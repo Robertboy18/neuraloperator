@@ -17,8 +17,9 @@ from neuralop.training.callbacks import IncrementalCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.datasets import data_transforms
 import os
+import matplotlib.pyplot as plt
 
-os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/robert_wandb/")
+#os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/robert_wandb/")
 # Read the configuration
 config_name = "default"
 pipe = ConfigPipeline(
@@ -77,12 +78,12 @@ if config.verbose:
     pipe.log()
     sys.stdout.flush()
 
-train_path = "/pscratch/sd/r/rgeorge/data/NavierStokes_V1e-5_N1200_T20.mat"
-test_path = "/pscratch/sd/r/rgeorge/data/NavierStokes_V1e-5_N1200_T20.mat"
+train_path = "/raid/robert/NavierStokes_V1e-5_N1200_T20.mat"
+test_path = "/raid/robert/NavierStokes_V1e-5_N1200_T20.mat"
 # Loading the Navier-Stokes dataset in 128x128 resolution
 # full data 1000, 200
 # low data 250, 50
-train_loader, test_loaders, data_processor = load_ns_time(train_path, test_path, ntrain=250, ntest=50, channel_dim = 1, subsampling_rate=1, batch_size=32, T = 10, time = True, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
+train_loader, test_loaders, data_processor = load_ns_time(train_path, test_path, ntrain=1000, ntest=200, channel_dim = 1, subsampling_rate=1, batch_size=32, T = 10, time = True, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
@@ -97,149 +98,187 @@ if data_processor is not None:
     data_processor = data_processor.to(device)
 #model = get_model(config)
 #model = model.to(device)
-modes = config.mode
-s1 = tuple([modes, modes])
-if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
-    s = (2,2)
-else:
-    s = s1
-    
-model = FNO(
-    max_n_modes=s1,
-    n_modes=s,
-    hidden_channels=128,
-    in_channels=10,
-    out_channels=1,
-).to(device)
-
-# Use distributed data parallel
-if config.distributed.use_distributed:
-    model = DDP(
-        model, device_ids=[device.index], output_device=device.index, static_graph=True
-    )
-
-# Create the optimizer
-optimizer = torch.optim.Adam(
-    model.parameters(),
-    lr=config.opt.learning_rate,
-    weight_decay=config.opt.weight_decay,
-)
-
-if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
-    callbacks = [
-    IncrementalCallback(
-        incremental_loss_gap=config.incremental.incremental_loss_gap,
-        incremental_grad=config.incremental.incremental_grad,
-        incremental_grad_eps=config.incremental.grad_eps,
-        incremental_loss_eps = config.incremental.loss_eps,
-        incremental_buffer=5,
-        incremental_max_iter=config.incremental.max_iter,
-        incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_init_args)]
-else:
-    callbacks = [BasicLoggerCallback(wandb_init_args)]
-    
-data_transform = None
-if config.incremental.incremental_res:
-    data_transform = data_transforms.IncrementalDataProcessor(
-        in_normalizer=None,
-        out_normalizer=None,
-        positional_encoding=None,
-        device=device,
-        dataset_sublist=config.incremental.sub_list1,
-        dataset_resolution=64,
-        dataset_indices=[1,2],
-        epoch_gap=config.incremental.epoch_gap,
-        verbose=True,
+pred1, pred2 = None, None
+modes = int(config.mode)
+for i in [10, 90]:
+    s1 = tuple([i, i])
+    if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
+        s = (2,2)
+    else:
+        s = s1
+        
+    model = FNO(
+        max_n_modes=s1,
+        n_modes=s,
+        hidden_channels=128,
+        in_channels=10,
+        out_channels=1,
     ).to(device)
-    
 
-if config.opt.scheduler == "ReduceLROnPlateau":
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        factor=config.opt.gamma,
-        patience=config.opt.scheduler_patience,
-        mode="min",
+    # Use distributed data parallel
+    if config.distributed.use_distributed:
+        model = DDP(
+            model, device_ids=[device.index], output_device=device.index, static_graph=True
+        )
+
+    # Create the optimizer
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=config.opt.learning_rate,
+        weight_decay=config.opt.weight_decay,
     )
-elif config.opt.scheduler == "CosineAnnealingLR":
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=config.opt.scheduler_T_max
-    )
-elif config.opt.scheduler == "StepLR":
-    scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, step_size=config.opt.step_size, gamma=config.opt.gamma
-    )
-else:
-    raise ValueError(f"Got scheduler={config.opt.scheduler}")
+
+    if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
+        callbacks = [
+        IncrementalCallback(
+            incremental_loss_gap=config.incremental.incremental_loss_gap,
+            incremental_grad=config.incremental.incremental_grad,
+            incremental_grad_eps=config.incremental.grad_eps,
+            incremental_loss_eps = config.incremental.loss_eps,
+            incremental_buffer=5,
+            incremental_max_iter=config.incremental.max_iter,
+            incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_init_args)]
+    else:
+        callbacks = [BasicLoggerCallback(wandb_init_args)]
+        
+    data_transform = None
+    if config.incremental.incremental_res:
+        data_transform = data_transforms.IncrementalDataProcessor(
+            in_normalizer=None,
+            out_normalizer=None,
+            positional_encoding=None,
+            device=device,
+            dataset_sublist=config.incremental.sub_list1,
+            dataset_resolution=64,
+            dataset_indices=[1,2],
+            epoch_gap=config.incremental.epoch_gap,
+            verbose=True,
+        ).to(device)
+        
+
+    if config.opt.scheduler == "ReduceLROnPlateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            factor=config.opt.gamma,
+            patience=config.opt.scheduler_patience,
+            mode="min",
+        )
+    elif config.opt.scheduler == "CosineAnnealingLR":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=config.opt.scheduler_T_max
+        )
+    elif config.opt.scheduler == "StepLR":
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=config.opt.step_size, gamma=config.opt.gamma
+        )
+    else:
+        raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
 
-# Creating the losses
-l2loss = LpLoss(d=2, p=2)
-h1loss = H1Loss(d=2)
-if config.opt.training_loss == "l2":
-    train_loss = l2loss
-elif config.opt.training_loss == "h1":
-    train_loss = h1loss
-else:
-    raise ValueError(
-        f'Got training_loss={config.opt.training_loss} '
-        f'but expected one of ["l2", "h1"]'
-    )
-eval_losses = {"h1": h1loss, "l2": l2loss}
-
-if config.verbose:
-    print("\n### MODEL ###\n", model)
-    print("\n### OPTIMIZER ###\n", optimizer)
-    print("\n### SCHEDULER ###\n", scheduler)
-    print("\n### LOSSES ###")
-    print(f"\n * Train: {train_loss}")
-    print(f"\n * Test: {eval_losses}")
-    print(f"\n### Beginning Training...\n")
-    sys.stdout.flush()
-
-trainer = Trainer(
-    model=model,
-    n_epochs=config.opt.n_epochs,
-    data_processor=data_transform,
-    device=device,
-    amp_autocast=config.opt.amp_autocast,
-    callbacks=callbacks,
-    log_test_interval=config.wandb.log_test_interval,
-    log_output=config.wandb.log_output,
-    use_distributed=config.distributed.use_distributed,
-    verbose=config.verbose,
-    wandb_log = config.wandb.log,
-    ns2dtime=config.ns2dtime,
-    nstime=config.nstime
-)
-
-# Log parameter count
-if is_logger:
-    n_params = count_model_params(model)
+    # Creating the losses
+    l2loss = LpLoss(d=2, p=2)
+    h1loss = H1Loss(d=2)
+    if config.opt.training_loss == "l2":
+        train_loss = l2loss
+    elif config.opt.training_loss == "h1":
+        train_loss = h1loss
+    else:
+        raise ValueError(
+            f'Got training_loss={config.opt.training_loss} '
+            f'but expected one of ["l2", "h1"]'
+        )
+    eval_losses = {"h1": h1loss, "l2": l2loss}
 
     if config.verbose:
-        print(f"\nn_params: {n_params}")
+        print("\n### MODEL ###\n", model)
+        print("\n### OPTIMIZER ###\n", optimizer)
+        print("\n### SCHEDULER ###\n", scheduler)
+        print("\n### LOSSES ###")
+        print(f"\n * Train: {train_loss}")
+        print(f"\n * Test: {eval_losses}")
+        print(f"\n### Beginning Training...\n")
         sys.stdout.flush()
 
-    if config.wandb.log:
-        to_log = {"n_params": n_params}
-        if config.n_params_baseline is not None:
-            to_log["n_params_baseline"] = (config.n_params_baseline,)
-            to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
-            to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-        wandb.log(to_log)
-        wandb.watch(model)
+    if i == 10:
+        epochs = 1
+    else:
+        epochs = 100
+    trainer = Trainer(
+        model=model,
+        n_epochs=epochs,
+        data_processor=data_transform,
+        device=device,
+        amp_autocast=config.opt.amp_autocast,
+        callbacks=callbacks,
+        log_test_interval=config.wandb.log_test_interval,
+        log_output=config.wandb.log_output,
+        use_distributed=config.distributed.use_distributed,
+        verbose=config.verbose,
+        wandb_log = config.wandb.log,
+        ns2dtime=config.ns2dtime,
+        nstime=config.nstime
+    )
+
+    # Log parameter count
+    if is_logger:
+        n_params = count_model_params(model)
+
+        if config.verbose:
+            print(f"\nn_params: {n_params}")
+            sys.stdout.flush()
+
+        if config.wandb.log:
+            to_log = {"n_params": n_params}
+            if config.n_params_baseline is not None:
+                to_log["n_params_baseline"] = (config.n_params_baseline,)
+                to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
+                to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
+            wandb.log(to_log)
+            wandb.watch(model)
 
 
-trainer.train(
-    train_loader=train_loader,
-    test_loaders=test_loaders,
-    optimizer=optimizer,
-    scheduler=scheduler,
-    regularizer=False,
-    training_loss=train_loss,
-    eval_losses=eval_losses,
-)
+    trainer.train(
+        train_loader=train_loader,
+        test_loaders=test_loaders,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        regularizer=False,
+        training_loss=train_loss,
+        eval_losses=eval_losses,
+    )
 
+    train_dataset = train_loader.dataset
+    # Which sample to view
+    index = 0
 
+    data = train_dataset[index]
+    x = data['x']
+    y = data['y']
+    print(x.shape, y.shape)
+    with torch.no_grad():
+        model.eval()
+        pred = model(x.unsqueeze(0).permute(0, 3, 1, 2).to(device))
+        if i == 10:
+            pred1 = pred.detach().squeeze().cpu()
+        else:
+            pred2 = pred.detach().squeeze().cpu()
+
+fig = plt.figure(figsize=(15, 5))
+ax = fig.add_subplot(1, 4, 1)
+ax.imshow(x[:, :, 0])
+ax.set_title('input x')
+ax = fig.add_subplot(1, 4, 2)
+ax.imshow(y[:, :, 0])
+ax.set_title('input y')
+ax = fig.add_subplot(1, 4, 3)
+print(pred1.shape, pred2.shape, type(pred1), type(pred2))
+ax.imshow(pred1)
+ax.set_title('Prediction K = 10')
+ax = fig.add_subplot(1, 4, 4)
+ax.imshow(pred2)
+ax.set_title('Prediction K = 90')
+fig.suptitle('Visualizing one input sample', y=0.98)
+plt.savefig('darcy_flow_sample.png')
+fig.show()
 if config.wandb.log and is_logger:
     wandb.finish()

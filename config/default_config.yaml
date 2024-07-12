@@ -51,14 +51,14 @@ default: &DEFAULT
     max_iter: 1
     loss_eps: 0.1
     grad_max: 2
-    epoch_gap: 25
+    epoch_gap: 100
     sub_list1: [4, 2, 1]
     
   # Optimizer
   opt:
-    n_epochs: 100
+    n_epochs: 500
     learning_rate: 1e-3
-    training_loss: 'h1'
+    training_loss: 'l2'
     weight_decay: 1e-4
     amp_autocast: False
 
@@ -95,8 +95,8 @@ default: &DEFAULT
 
   # Weights and biases
   wandb:
-    log: True
-    name: "navierstokes-3d-final-rerun" # If None, config will be used but you can override it here
+    log: False
+    name: "navierstokes-2d-time-final-rerun-train-l2" # If None, config will be used but you can override it here
     group: '' 
     project: "navier-stokes"
     entity: "research-pino_ifno" # put your username here
@@ -105,9 +105,9 @@ default: &DEFAULT
     log_test_interval: 1
 
   seed: 0
-  mode: 9s0
+  mode: 10
   nstime: False
-  ns2dtime: False
+  ns2dtime: True
   
 original_fno:
   arch: 'tfno2d'
