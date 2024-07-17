@@ -96,7 +96,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: "navierstokes-3d-final-rerun" # If None, config will be used but you can override it here
+    name: "navierstokes-2d-time-galore_baseline" # If None, config will be used but you can override it here
     group: '' 
     project: "navier-stokes"
     entity: "research-pino_ifno" # put your username here
@@ -105,10 +105,16 @@ default: &DEFAULT
     log_test_interval: 1
 
   seed: 0
-  mode: 9s0
+  mode: 90
   nstime: False
-  ns2dtime: False
+  ns2dtime: True
   
+  galore: False
+  scale: 0.25
+  rank: 0.1
+  type: "tucker"
+  proj_gap: 50
+
 original_fno:
   arch: 'tfno2d'
 

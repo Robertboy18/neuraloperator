@@ -1,19 +1,17 @@
 import sys
-import os
-os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import torch
-from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
-from neuralop import H1Loss, LpLoss, Trainer, get_model
-from neuralop.datasets import load_darcy_flow_small, load_darcy_pt
+from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
+from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.nn.functional as F
+
+from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
+from neuralop.datasets import load_burgers_mat
 from neuralop.datasets.data_transforms import MGPatchingDataProcessor
-from neuralop.training import setup
-from neuralop.training.callbacks import BasicLoggerCallback
-from neuralop.utils import get_wandb_api_key, count_model_params
+from neuralop.training import setup, BasicLoggerCallback
 from neuralop.models import FNO
 from neuralop.training.callbacks import IncrementalCallback
-from neuralop.datasets import data_transforms
+from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.training import AdamW
 
 
@@ -22,7 +20,7 @@ config_name = "default"
 pipe = ConfigPipeline(
     [
         YamlConfig(
-            "./darcy_config.yaml", config_name="default", config_folder="../config"
+            "./burgers_config.yaml", config_name="default", config_folder="../config"
         ),
         ArgparseConfig(infer_types=True, config_name=None, config_file=None),
         YamlConfig(config_folder="../config"),
@@ -34,28 +32,31 @@ config_name = pipe.steps[-1].config_name
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
 
+
 # Set up WandB logging
-wandb_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
-        wandb_name = config.wandb.name
+        if config.galore:
+            wandb_name = "burgers_galore-cp"
+        else:
+            wandb_name = "burgers_baseline_nogalore"
     else:
         wandb_name = "_".join(
             f"{var}"
             for var in [
                 config_name,
                 config.fno2d.n_layers,
-                config.fno2d.hidden_channels,
                 config.fno2d.n_modes_width,
                 config.fno2d.n_modes_height,
+                config.fno2d.hidden_channels,
                 config.fno2d.factorization,
                 config.fno2d.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
         )
-    wandb_args =  dict(
+    wandb_init_args = dict(
         config=config,
         name=wandb_name,
         group=config.wandb.group,
@@ -66,45 +67,35 @@ if config.wandb.log and is_logger:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
 
+else: 
+    wandb_init_args = None
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
 # Print config to screen
-if config.verbose and is_logger:
+if config.verbose:
     pipe.log()
     sys.stdout.flush()
 
-TRAIN_PATH = '/raid/robert/piececonst_r421_N1024_smooth1.mat'
-TEST_PATH = '/raid/robert/piececonst_r421_N1024_smooth1.mat'
-
-train_loader, test_loaders, data_processor = load_darcy_pt(TRAIN_PATH, 800, [200]
-                                                ,train_resolution=421, test_resolutions=[421], batch_size=32, test_batch_sizes=[32], positional_encoding=True, encode_input=False, encode_output=True, encoding='channel-wise', channel_dim=1)
-
-# convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
-if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
-                                             out_normalizer=data_processor.out_normalizer,
-                                             positional_encoding=data_processor.positional_encoding,
-                                             padding_fraction=config.patching.padding,
-                                             stitching=config.patching.stitching,
-                                             levels=config.patching.levels)
-data_transform = data_processor.to(device)
+# Load the Burgers dataset
+data_path = "/raid/robert/burgers_data_R10.mat"
+train_loader, test_loaders = load_burgers_mat(data_path, 800, 200)
+output_encoder = None
+#model = get_model(config)
+#model = model.to(device)
 
 if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
-    s = (2,2)
+    s = (2,)
 else:
-    s = (10,10)
+    s = (90,)
     
 model = FNO(
-    max_n_modes=(10, 10),
+    max_n_modes=(90,),
     n_modes=s,
     hidden_channels=128,
-    in_channels=3,
+    in_channels=2,
     out_channels=1,
-)
-
-#get_model(config)
-model = model.to(device)
+).to(device)
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
@@ -112,33 +103,8 @@ if config.distributed.use_distributed:
         model, device_ids=[device.index], output_device=device.index, static_graph=True
     )
 
-if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
-    callbacks = [
-    IncrementalCallback(
-        incremental_loss_gap=config.incremental.incremental_loss_gap,
-        incremental_grad=config.incremental.incremental_grad,
-        incremental_grad_eps=config.incremental.grad_eps,
-        incremental_loss_eps = config.incremental.loss_eps,
-        incremental_buffer=5,
-        incremental_max_iter=config.incremental.max_iter,
-        incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_args)]
-else:
-    callbacks = [BasicLoggerCallback(wandb_args)]
-
-if config.incremental.incremental_res:
-    data_transform = data_transforms.IncrementalDataProcessor(
-        in_normalizer=None,
-        out_normalizer=None,
-        positional_encoding=None,
-        device=device,
-        dataset_sublist=[10,9,8,7,6,5,4,3,2,1],
-        dataset_resolution=421,
-        dataset_indices=[2, 3],
-        epoch_gap=config.incremental.epoch_gap,
-        verbose=True,
-    ).to(device)
-
 if config.galore:
+    print("Using Galore")
     galore_params = []
     galore_params.extend(list(model.fno_blocks.convs.parameters()))
     print(galore_params[0].shape, galore_params[1].shape, galore_params[2].shape, galore_params[3].shape)
@@ -148,10 +114,11 @@ if config.galore:
     regular_params = [p for p in model.parameters() if id(p) not in id_galore_params]
     # then call galore_adamw
     param_groups = [{'params': regular_params}, 
-                    {'params': galore_params, 'type': "tucker", 'rank': config.rank , 'update_proj_gap': 50, 'scale': config.scale, 'proj_type': "std", 'dim': 5}]
-    param_groups1 = [{'type': "cp", 'rank': config.rank , 'update_proj_gap': 50, 'scale': config.scale, 'proj_type': "std", 'dim': 5}]
+                    {'params': galore_params, 'type': config.type, 'rank': config.rank , 'update_proj_gap': config.proj_gap, 'scale': config.scale, 'proj_type': "std", 'dim': 5}]
+    param_groups1 = [{'type': config.type, 'rank': config.rank , 'update_proj_gap': config.proj_gap, 'scale': config.scale, 'proj_type': "std", 'dim': 5}]
     optimizer = AdamW(param_groups, lr=5e-3)
 else:
+    print("Not using Galore")
     # Create the optimizer
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -160,6 +127,31 @@ else:
     )
     param_groups1 = [{'rank': 'baseline'}]
 
+if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
+    callbacks = [
+    IncrementalCallback(
+        incremental_loss_gap=config.incremental.incremental_loss_gap,
+        incremental_grad=config.incremental.incremental_grad,
+        incremental_grad_eps=config.incremental.grad_eps,
+        incremental_buffer=5,
+        incremental_max_iter=config.incremental.max_iter,
+        incremental_grad_max_iter=config.incremental.grad_max), BasicLoggerCallback(wandb_init_args)]
+else:
+    callbacks = [BasicLoggerCallback(wandb_init_args)]
+data_transform = None
+if config.incremental.incremental_res:
+    data_transform = data_transforms.IncrementalDataProcessor(
+        in_normalizer=None,
+        out_normalizer=None,
+        positional_encoding=None,
+        device=device,
+        dataset_sublist=[4, 2, 1],
+        dataset_resolution=421,
+        dataset_indices=[2, 3],
+        epoch_gap=config.incremental.epoch_gap,
+        verbose=True,
+    ).to(device)
+    
 if config.opt.scheduler == "ReduceLROnPlateau":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -182,18 +174,39 @@ else:
 # Creating the losses
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
-if config.opt.training_loss == "l2":
-    train_loss = l2loss
-elif config.opt.training_loss == "h1":
-    train_loss = h1loss
-else:
-    raise ValueError(
-        f'Got training_loss={config.opt.training_loss} '
-        f'but expected one of ["l2", "h1"]'
-    )
+ic_loss = ICLoss()
+equation_loss = BurgersEqnLoss(method=config.opt.get('pino_method', None), 
+                               visc=0.01, loss=F.mse_loss)
+
+training_loss = config.opt.training_loss
+if not isinstance(training_loss, (tuple, list)):
+    training_loss = [training_loss]
+
+losses = []
+weights = []
+for loss in training_loss:
+    # Append loss
+    if loss == 'l2':
+        losses.append(l2loss)
+    elif loss == 'h1':
+        losses.append(h1loss)
+    elif loss == 'equation':
+        losses.append(equation_loss)
+    elif loss == 'ic':
+        losses.append(ic_loss)
+    else:
+        raise ValueError(f'Training_loss={loss} is not supported.')
+
+    # Append loss weight
+    if "loss_weights" in config.opt:
+        weights.append(config.opt.loss_weights.get(loss, 1.))
+    else:
+        weights.append(1.)
+
+train_loss = WeightedSumLoss(losses=losses, weights=weights)
 eval_losses = {"h1": h1loss, "l2": l2loss}
 
-if config.verbose and is_logger:
+if config.verbose:
     print("\n### MODEL ###\n", model)
     print("\n### OPTIMIZER ###\n", optimizer)
     print("\n### SCHEDULER ###\n", scheduler)
@@ -202,6 +215,22 @@ if config.verbose and is_logger:
     print(f"\n * Test: {eval_losses}")
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
+
+# only perform MG patching if config patching levels > 0
+
+callbacks = [
+    BasicLoggerCallback(wandb_init_args)
+]
+
+tr = False
+if tr:
+    data_transform = MGPatchingDataProcessor(model=model,
+                                           levels=config.patching.levels,
+                                           padding_fraction=config.patching.padding,
+                                           stitching=config.patching.stitching,
+                                           device=device,
+                                           in_normalizer=output_encoder,
+                                           out_normalizer=output_encoder)
 
 trainer = Trainer(
     model=model,
@@ -230,9 +259,9 @@ if is_logger:
             to_log["n_params_baseline"] = (config.n_params_baseline,)
             to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
             to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-        wandb.log(param_groups1[0])
         wandb.log(to_log)
         wandb.watch(model)
+
 
 trainer.train(
     train_loader=train_loader,

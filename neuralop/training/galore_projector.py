@@ -1,9 +1,9 @@
 import torch
-from tensorly.decomposition import tucker, CP
+from tensorly.decomposition import tucker, parafac
 from tensorly import tenalg 
 
 class GaLoreProjectorTensor:
-    def __init__(self, rank, verbose=False, update_proj_gap=200, scale=1.0, proj_type='std'):
+    def __init__(self, rank, verbose=False, type = "cp", update_proj_gap=200, scale=1.0, proj_type='std'):
         self.rank = rank
         self.verbose = verbose
         self.update_proj_gap = update_proj_gap
@@ -11,13 +11,14 @@ class GaLoreProjectorTensor:
         self.ortho_matrix = None
         self.proj_type = proj_type
         self.transformed_low_rank = None
-        self.default = True
+        self.default = False
+        self.type = type
         
     def project(self, full_rank_grad, iter):
         if self.default == True:
             return full_rank_grad
         if self.ortho_matrix is None and iter % self.update_proj_gap == 0:
-            self.ortho_matrix = self.get_orthogonal_matrix(full_rank_grad, self.rank)    
+            self.ortho_matrix = self.get_orthogonal_matrix(full_rank_grad, self.rank)
         self.transformed_low_rank = self.transform(self.ortho_matrix, full_rank_grad)
         return self.transformed_low_rank
 
@@ -35,10 +36,16 @@ class GaLoreProjectorTensor:
             matrix = module_params.data.float()
         else:
             matrix = module_params.data
-        tucker_tensor = tucker(matrix, rank=rank1)
+        if self.type == "cp":
+            rank_list = [rank1] * len(matrix.shape)
+            rank_list[-1] = 2
+            tucker_tensor = parafac(matrix, rank_list)
+        else:
+            tucker_tensor = tucker(matrix, rank=rank1)
         return tucker_tensor
 
     def transform(self, tensor, x):
+        #print(tensor)
         _, factors = tensor
         return tenalg.multi_mode_dot(x, factors, transpose=True)
 

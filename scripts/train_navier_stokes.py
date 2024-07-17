@@ -17,8 +17,10 @@ from neuralop.training.callbacks import IncrementalCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.datasets import data_transforms
 import os
+from neuralop.training import AdamW
 
-os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/robert_wandb/")
+
+#os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/robert_wandb/")
 
 # Read the configuration
 config_name = "default"
@@ -126,12 +128,28 @@ if config.distributed.use_distributed:
         model, device_ids=[device.index], output_device=device.index, static_graph=True
     )
 
-# Create the optimizer
-optimizer = torch.optim.Adam(
-    model.parameters(),
-    lr=config.opt.learning_rate,
-    weight_decay=config.opt.weight_decay,
-)
+if config.galore:
+    print("Using Galore")
+    galore_params = []
+    galore_params.extend(list(model.fno_blocks.convs.parameters()))
+    print(galore_params[0].shape, galore_params[1].shape, galore_params[2].shape, galore_params[3].shape)
+    galore_params.pop(0)
+    id_galore_params = [id(p) for p in galore_params]
+    # make parameters without "rank" to another group
+    regular_params = [p for p in model.parameters() if id(p) not in id_galore_params]
+    # then call galore_adamw
+    param_groups = [{'params': regular_params}, 
+                    {'params': galore_params, 'type': "tucker", 'rank': config.rank , 'update_proj_gap': 50, 'scale': config.scale, 'proj_type': "std", 'dim': 5}]
+    param_groups1 = [{'type': "cp", 'rank': config.rank , 'update_proj_gap': 50, 'scale': config.scale, 'proj_type': "std", 'dim': 5}]
+    optimizer = AdamW(param_groups, lr=5e-3)
+else:
+    # Create the optimizer
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=config.opt.learning_rate,
+        weight_decay=config.opt.weight_decay,
+    )
+    param_groups1 = [{'rank': 'baseline'}]
 
 if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
     callbacks = [

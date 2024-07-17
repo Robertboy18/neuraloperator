@@ -73,7 +73,7 @@ if config.verbose:
     sys.stdout.flush()
 
 # Load the Burgers dataset
-data_path = "/pscratch/sd/r/rgeorge/data/burgers_data_R10.mat"
+data_path = "/raid/robert/burgers_data_R10.mat"
 train_loader, test_loaders = load_burgers_mat(data_path, 800, 200)
 output_encoder = None
 #model = get_model(config)
@@ -88,7 +88,7 @@ model = FNO(
     max_n_modes=(90,),
     n_modes=s,
     hidden_channels=128,
-    in_channels=1,
+    in_channels=2,
     out_channels=1,
 ).to(device)
 

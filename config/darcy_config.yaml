@@ -92,7 +92,7 @@ default: &DEFAULT
   
   # Weights and biases
   wandb:
-    log: True
+    log: False
     name: "darcy-TFNO" # If None, config will be used but you can override it here
     group: '' 
     project: "darcy"

@@ -114,6 +114,7 @@ class Trainer:
         self.incremental_resolution = False
         self.nstime = nstime
         self.ns2dtime = ns2dtime
+        self.burgers = False
         # If the data_processor is an IncrementalDataProcessor, then we need to do curriculum learning - Increase the resolution of the samples incrementally
         if type(self.data_processor).__name__ == "IncrementalDataProcessor":
             self.incremental_resolution = True
@@ -209,7 +210,15 @@ class Trainer:
                         sample = self.data_processor.preprocess(sample, epoch=epoch, mode = "Train")
                 else:
                     # load data to device if no preprocessor exists
-                    sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+                    if self.burgers:
+                        x = sample[0]
+                        y = sample[1]
+                        x = x.to(self.device)
+                        y = y.to(self.device)
+                        sample = {'x': x, 'y': y}
+                        sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+                    else:
+                        sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
                     
                 x = sample['x']
                 y = sample['y']
@@ -272,7 +281,10 @@ class Trainer:
                             elif self.ns2dtime:
                                 loss += loss1
                             else:
-                                loss = training_loss(out.float(), **sample)
+                                if self.burgers:
+                                    loss = training_loss(out.float().squeeze(), **sample)
+                                else:
+                                    loss = training_loss(out.float(), **sample)
                         elif isinstance(out, dict):
                             loss += training_loss(**out, **sample)
                 if regularizer:
@@ -310,9 +322,12 @@ class Trainer:
                     self.callbacks.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
                                         avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
                 
-
-                for loader_name, loader in test_loaders.items():
-                    errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                
+                if self.burgers:
+                    errors = self.evaluate(eval_losses, test_loaders, log_prefix='test')
+                else:
+                    for loader_name, loader in test_loaders.items():
+                        errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
 
                 if self.callbacks:
                     self.callbacks.on_val_end()
@@ -351,8 +366,7 @@ class Trainer:
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-
-                n_samples += sample['y'].size(0)
+                
                 if self.callbacks:
                     self.callbacks.on_val_batch_start(idx=idx, sample=sample)
 
@@ -363,7 +377,18 @@ class Trainer:
                         sample = self.data_processor.preprocess(sample, mode = "Val")
                 else:
                     # load data to device if no preprocessor exists
-                    sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+                    if self.burgers:
+                        x = sample[0]
+                        y = sample[1]
+                        x = x.to(self.device)
+                        y = y.to(self.device)
+                        sample = {'x': x, 'y': y}
+                        sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+                    else:
+                        sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+
+                n_samples += sample['y'].size(0)
+
                 x = sample['x']
                 y = sample['y']
                 batch, res = x.shape[0], x.shape[1]
@@ -418,7 +443,10 @@ class Trainer:
                                 else:
                                     val_loss = loss2
                             else:
-                                val_loss = loss(out, **sample)
+                                if self.burgers:
+                                    val_loss = loss(out.squeeze(), **sample)
+                                else:
+                                    val_loss = loss(out, **sample)
                         elif isinstance(out, dict):
                             val_loss = loss(out, **sample)
                         if val_loss.shape == ():

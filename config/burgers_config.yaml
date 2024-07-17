@@ -84,7 +84,7 @@ default: &DEFAULT
     stitching: False
 
   incremental:
-    incremental_loss_gap: True
+    incremental_loss_gap: False
     incremental_grad: False
     incremental_res: False
     grad_eps: 0.99999
@@ -93,10 +93,16 @@ default: &DEFAULT
     grad_max: 2
     epoch_gap: 50
     
+  galore: True
+  scale: 0.25
+  rank: 50
+  type: "cp"
+  proj_gap: 50
+
   # Weights and biases
   wandb:
     log: False
-    name: "burgers-final-rerun-loss" # If None, config will be used but you can override it here
+    name: "burgers_galore" # If None, config will be used but you can override it here
     group: '' 
     project: "burgers"
     entity: "research-pino_ifno" # put your username here
