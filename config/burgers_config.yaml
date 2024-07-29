@@ -49,7 +49,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 500
+    n_epochs: 10
     learning_rate: 0.001
     training_loss: 'l2'
     weight_decay: 1e-4
@@ -95,8 +95,8 @@ default: &DEFAULT
     
   galore: True
   scale: 0.25
-  rank: 50
-  type: "cp"
+  rank: 0.5
+  type: "tucker"
   proj_gap: 50
 
   # Weights and biases

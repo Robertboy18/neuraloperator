@@ -1,0 +1,6 @@
+Memory Timeline for cuda:0
+Max CUDA allocated (GB): 0.00
+Max CUDA reserved (GB): 0.00
+Max optimizer state (GB): 0.00
+Max gradient memory (GB): 0.00
+Max parameter memory (GB): 0.00

@@ -243,7 +243,8 @@ trainer = Trainer(
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
-    callbacks=callbacks)
+    callbacks=callbacks,
+    rank = str(config.rank))
 
 # Log parameter count
 if is_logger:

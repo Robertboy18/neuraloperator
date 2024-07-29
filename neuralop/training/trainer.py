@@ -41,10 +41,11 @@ categories = {"PARAMETER": 0,
               "None": 7}
 GB = 1024**3
 device_str = "cuda:0"
+rank1 = "0.1"
 def trace_handler(prof):
     host_name = socket.gethostname()
     timestamp = datetime.now().strftime(TIME_FORMAT_STR)
-    file_prefix = f"trace_{timestamp}_{host_name}"
+    file_prefix = f"trace_burgers_{rank1}"
 
     # export raw memory timeline
     mem_tl = MemoryProfileTimeline(prof._memory_profile())
@@ -81,8 +82,8 @@ def trace_handler(prof):
     f.close()
 
     # Construct the memory timeline file.
-    fname = f"./snapshots/{file_prefix}.raw.json.gz"
-    prof.export_memory_timeline(fname, device=device_str)
+    #fname = f"./snapshots/{file_prefix}.raw.json.gz"
+    #prof.export_memory_timeline(fname, device=device_str)
     
 class Trainer:
     def __init__(self, *, 
@@ -99,6 +100,7 @@ class Trainer:
                  verbose=False, 
                  nstime=False,
                  ns2dtime=False,
+                 rank="Baseline"
                  ):
         """
         A general Trainer class to train neural-operators on given datasets
@@ -161,7 +163,9 @@ class Trainer:
         self.incremental_resolution = False
         self.nstime = nstime
         self.ns2dtime = ns2dtime
-        self.burgers = False
+        self.burgers = True
+        self.rank = rank
+        rank1 = rank
         # If the data_processor is an IncrementalDataProcessor, then we need to do curriculum learning - Increase the resolution of the samples incrementally
         if type(self.data_processor).__name__ == "IncrementalDataProcessor":
             self.incremental_resolution = True
@@ -211,7 +215,6 @@ class Trainer:
 
         errors = None
 
-        """
         with torch.profiler.profile(
             activities=[
                 torch.profiler.ProfilerActivity.CPU,
@@ -230,159 +233,159 @@ class Trainer:
             with_stack=True,
             on_trace_ready=trace_handler,
         ) as prof:
-        """
-        for epoch in range(self.n_epochs):
-            #prof.step()
-            if self.callbacks:
-                self.callbacks.on_epoch_start(epoch=epoch)
-
-            avg_loss = 0
-            avg_lasso_loss = 0
-            self.model.train()
-            t1 = default_timer()
-            train_err = 0.0
-
-            for idx, sample in enumerate(train_loader):
-
+        
+            for epoch in range(self.n_epochs):
+                prof.step()
                 if self.callbacks:
-                    self.callbacks.on_batch_start(idx=idx, sample=sample)
+                    self.callbacks.on_epoch_start(epoch=epoch)
 
-                if regularizer:
-                    regularizer.reset()
+                avg_loss = 0
+                avg_lasso_loss = 0
+                self.model.train()
+                t1 = default_timer()
+                train_err = 0.0
 
-                if self.data_processor is not None:
-                    if not self.incremental_resolution:
-                        sample = self.data_processor.preprocess(sample)
+                for idx, sample in enumerate(train_loader):
+
+                    if self.callbacks:
+                        self.callbacks.on_batch_start(idx=idx, sample=sample)
+
+                    if regularizer:
+                        regularizer.reset()
+
+                    if self.data_processor is not None:
+                        if not self.incremental_resolution:
+                            sample = self.data_processor.preprocess(sample)
+                        else:
+                            sample = self.data_processor.preprocess(sample, epoch=epoch, mode = "Train")
                     else:
-                        sample = self.data_processor.preprocess(sample, epoch=epoch, mode = "Train")
-                else:
-                    # load data to device if no preprocessor exists
-                    if self.burgers:
-                        x = sample[0]
-                        y = sample[1]
-                        x = x.to(self.device)
-                        y = y.to(self.device)
-                        sample = {'x': x, 'y': y}
-                        sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
-                    else:
-                        sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
-                    
-                x = sample['x']
-                y = sample['y']
-                batch, res = x.shape[0], x.shape[1]
-                if self.nstime:
+                        # load data to device if no preprocessor exists
+                        if self.burgers:
+                            x = sample[0]
+                            y = sample[1]
+                            x = x.to(self.device)
+                            y = y.to(self.device)
+                            sample = {'x': x, 'y': y}
+                            sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+                        else:
+                            sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+                        
                     x = sample['x']
-                    grid = self.get_grid(x.shape, x.device)
-                    sample['x'] = torch.cat((x, grid), dim=-1).permute(0, 4, 1, 2, 3)
-                
-                loss1 = 0.
-                #with record_function("## forward ##"):
-                if self.amp_autocast:
-                    with amp.autocast(enabled=True):
-                        out  = self.model(**sample)
-                else:
+                    y = sample['y']
+                    batch, res = x.shape[0], x.shape[1]
                     if self.nstime:
-                        out  = self.model(**sample).view(batch, res, res, 10)
-                    elif self.ns2dtime:
-                        for t in range(0, 10):
-                            sample['y'] = y[..., t:t+1]
-                            if t == 0:
-                                xx = sample['x']
-                            x = xx
-                            sample['x'] = x.permute(0, 3, 1, 2)
-                            out = self.model(**sample).permute(0, 2, 3, 1)
-                            sample['y'] = sample['y'].view(batch, -1)
-                            loss1 += training_loss(out.view(batch, -1), **sample)
-                            if t == 0:
-                                pred = out
+                        x = sample['x']
+                        grid = self.get_grid(x.shape, x.device)
+                        sample['x'] = torch.cat((x, grid), dim=-1).permute(0, 4, 1, 2, 3)
+                    
+                    loss1 = 0.
+                    with record_function("## forward ##"):
+                        if self.amp_autocast:
+                            with amp.autocast(enabled=True):
+                                out  = self.model(**sample)
+                        else:
+                            if self.nstime:
+                                out  = self.model(**sample).view(batch, res, res, 10)
+                            elif self.ns2dtime:
+                                for t in range(0, 10):
+                                    sample['y'] = y[..., t:t+1]
+                                    if t == 0:
+                                        xx = sample['x']
+                                    x = xx
+                                    sample['x'] = x.permute(0, 3, 1, 2)
+                                    out = self.model(**sample).permute(0, 2, 3, 1)
+                                    sample['y'] = sample['y'].view(batch, -1)
+                                    loss1 += training_loss(out.view(batch, -1), **sample)
+                                    if t == 0:
+                                        pred = out
+                                    else:
+                                        pred = torch.cat((pred, out), -1)
+                                    xx = torch.cat((xx[..., 1:], out), dim=-1)
                             else:
-                                pred = torch.cat((pred, out), -1)
-                            xx = torch.cat((xx[..., 1:], out), dim=-1)
+                                out = self.model(**sample)
+
+                    if self.data_processor is not None:
+                        out, sample = self.data_processor.postprocess(out, sample)
+
+                    if self.callbacks:
+                        self.callbacks.on_before_loss(out=out)
+                    
+                    loss = 0
+                    if self.overrides_loss:
+                        if isinstance(out, torch.Tensor):
+                            loss += self.callbacks.compute_training_loss(out=out.float(), **sample, amp_autocast=self.amp_autocast)
+                        elif isinstance(out, dict):
+                            loss += self.callbacks.compute_training_loss(**out, **sample, amp_autocast=self.amp_autocast)
                     else:
-                        out = self.model(**sample)
-
-                if self.data_processor is not None:
-                    out, sample = self.data_processor.postprocess(out, sample)
-
-                if self.callbacks:
-                    self.callbacks.on_before_loss(out=out)
-                
-                loss = 0
-                if self.overrides_loss:
-                    if isinstance(out, torch.Tensor):
-                        loss += self.callbacks.compute_training_loss(out=out.float(), **sample, amp_autocast=self.amp_autocast)
-                    elif isinstance(out, dict):
-                        loss += self.callbacks.compute_training_loss(**out, **sample, amp_autocast=self.amp_autocast)
-                else:
-                    if self.amp_autocast:
-                        with amp.autocast(enabled=True):
+                        if self.amp_autocast:
+                            with amp.autocast(enabled=True):
+                                if isinstance(out, torch.Tensor):
+                                    loss = training_loss(out.float(), **sample)
+                                elif isinstance(out, dict):
+                                    loss += training_loss(**out, **sample)
+                        else:
                             if isinstance(out, torch.Tensor):
-                                loss = training_loss(out.float(), **sample)
+                                if self.nstime:
+                                    sample['y'] = sample['y'].view(batch, -1)
+                                    loss = training_loss(out.view(batch, -1), **sample)
+                                elif self.ns2dtime:
+                                    loss += loss1
+                                else:
+                                    if self.burgers:
+                                        loss = training_loss(out.float().squeeze(), **sample)
+                                    else:
+                                        loss = training_loss(out.float(), **sample)
                             elif isinstance(out, dict):
                                 loss += training_loss(**out, **sample)
-                    else:
-                        if isinstance(out, torch.Tensor):
-                            if self.nstime:
-                                sample['y'] = sample['y'].view(batch, -1)
-                                loss = training_loss(out.view(batch, -1), **sample)
-                            elif self.ns2dtime:
-                                loss += loss1
-                            else:
-                                if self.burgers:
-                                    loss = training_loss(out.float().squeeze(), **sample)
-                                else:
-                                    loss = training_loss(out.float(), **sample)
-                        elif isinstance(out, dict):
-                            loss += training_loss(**out, **sample)
-                if regularizer:
-                    loss += regularizer.loss
-                #with record_function("## backward ##"):  
-                loss.backward()
-                del out
-                #with record_function("## optimizer ##"):
-                optimizer.step()
-                optimizer.zero_grad(set_to_none=True)
-                train_err += loss.item()
-        
-                with torch.no_grad():
-                    avg_loss += loss.item()
                     if regularizer:
-                        avg_lasso_loss += regularizer.loss
-
-                if self.callbacks:
-                    self.callbacks.on_batch_end()
-
-            #with record_function("## scheduler ##"):
-            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler.step(train_err)
-            else:
-                scheduler.step()
-
-            epoch_train_time = default_timer() - t1            
-
-            train_err /= len(train_loader)
-            avg_loss  /= self.n_epochs
+                        loss += regularizer.loss
+                    with record_function("## backward ##"):  
+                        loss.backward()
+                    del out
+                    with record_function("## optimizer ##"):
+                        optimizer.step()
+                    optimizer.zero_grad(set_to_none=True)
+                    train_err += loss.item()
             
-            if epoch % self.log_test_interval == 0: 
+                    with torch.no_grad():
+                        avg_loss += loss.item()
+                        if regularizer:
+                            avg_lasso_loss += regularizer.loss
 
-                if self.callbacks:
-                    self.callbacks.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
-                                        avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
-                
-                
-                if self.burgers:
-                    errors = self.evaluate(eval_losses, test_loaders, log_prefix='test')
-                else:
-                    for loader_name, loader in test_loaders.items():
-                        errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                    if self.callbacks:
+                        self.callbacks.on_batch_end()
 
+                with record_function("## scheduler ##"):
+                    if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                        scheduler.step(train_err)
+                    else:
+                        scheduler.step()
+
+                epoch_train_time = default_timer() - t1            
+
+                train_err /= len(train_loader)
+                avg_loss  /= self.n_epochs
+                
+                if epoch % self.log_test_interval == 0: 
+
+                    if self.callbacks:
+                        self.callbacks.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
+                                            avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
+                    
+                    
+                    if self.burgers:
+                        errors = self.evaluate(eval_losses, test_loaders, log_prefix='test')
+                    else:
+                        for loader_name, loader in test_loaders.items():
+                            errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+
+                    if self.callbacks:
+                        self.callbacks.on_val_end()
+                
                 if self.callbacks:
-                    self.callbacks.on_val_end()
-            
-            if self.callbacks:
-                self.callbacks.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
-        #rof.export_memory_timeline(f"trial2.html", device="cuda:0")
-        return errors
+                    self.callbacks.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
+            prof.export_memory_timeline(f"burgers_rank_{self.rank}.html", device="cuda:0")
+            return errors
 
     def evaluate(self, loss_dict, data_loader,
                  log_prefix=''):

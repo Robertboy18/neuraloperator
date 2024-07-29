@@ -37,7 +37,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Set up the incremental FNO model
 # We start with 2 modes in each dimension
 # We choose to update the modes by the incremental gradient explained algorithm
-incremental = True
+incremental = False
 if incremental:
     starting_modes = (2, 2)
 else:
@@ -83,6 +83,7 @@ data_transform = data_transforms.IncrementalDataProcessor(
 )
 
 data_transform = data_transform.to(device)
+data_transform = None
 # %%
 # Set up the losses
 l2loss = LpLoss(d=2, p=2)
@@ -118,7 +119,7 @@ sys.stdout.flush()
 callbacks = [
     IncrementalCallback(
         incremental_loss_gap=False,
-        incremental_grad=True,
+        incremental_grad=False,
         incremental_grad_eps=0.9999,
         incremental_loss_eps = 0.001,
         incremental_buffer=5,
@@ -197,4 +198,5 @@ for index in range(3):
 
 fig.suptitle("Inputs, ground-truth output and prediction.", y=0.98)
 plt.tight_layout()
+plt.savefig("darcy_flow_small.png")
 fig.show()
