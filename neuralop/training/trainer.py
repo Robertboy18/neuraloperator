@@ -23,6 +23,7 @@ logging.basicConfig(
 )
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
+<<<<<<< HEAD
 
 import socket
 from datetime import datetime
@@ -84,6 +85,9 @@ def trace_handler(prof):
     # Construct the memory timeline file.
     #fname = f"./snapshots/{file_prefix}.raw.json.gz"
     #prof.export_memory_timeline(fname, device=device_str)
+=======
+from .mem_trace import trace_handler
+>>>>>>> 46ccee4808198816e3558864f819b1b3997a04d9
     
 class Trainer:
     def __init__(self, *, 
