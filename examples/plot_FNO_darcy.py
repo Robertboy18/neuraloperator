@@ -25,13 +25,17 @@ device = 'cuda'
 # %%
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
-        n_train=1000, batch_size=2, 
-        test_resolutions=[16, 32], n_tests=[100, 50],
+        n_train=10, batch_size=2, 
+        test_resolutions=[16, 32], n_tests=[10, 10],
         test_batch_sizes=[2, 2],
         positional_encoding=True
 )
 data_processor = data_processor.to(device)
 
+# print shape of the data
+for batch_features, batch_targets in enumerate(train_loader):
+    print("Batch features shape:", batch_features, batch_targets['x'].shape, batch_targets['y'].shape)
+    break  # Just print the first batch and exit the loop
 
 # %%
 # We create a tensorized FNO model

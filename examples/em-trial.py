@@ -16,8 +16,9 @@ from neuralop import LpLoss, H1Loss
 
 class TimeDomainDataset(Dataset):
     def __init__(self, features, targets):
-        self.features = torch.FloatTensor(features)
-        self.targets = torch.FloatTensor(targets)
+        # make the channel always 1 and the modes as the features and batch size to be the first
+        self.features = torch.FloatTensor(features).unsqueeze(1)
+        self.targets = torch.FloatTensor(targets).unsqueeze(1)
 
     def __len__(self):
         return len(self.features)
@@ -68,7 +69,7 @@ device = 'cuda'
 # %%
 # We create a tensorized FNO model
 
-model = FNO(n_modes=(16,), hidden_channels=64, projection_channels=128)
+model = FNO(n_modes=(16,), in_channels=1, out_channels=1, hidden_channels=12, projection_channels=12, n_layers=1)
 model = model.to(device)
 
 n_params = count_model_params(model)
