@@ -1,0 +1,3 @@
+[submodule "examples/snow"]
+	path = examples/snow
+	url = https://github.com/ledezmaluism/snow.git
