@@ -36,7 +36,7 @@ class SHGTimeSeriesDataset(Dataset):
     def __getitem__(self, idx):
         return self.input_series[idx], self.output_series[idx]
 
-def load_and_preprocess_data(file_path):
+def load_and_preprocess_data(file_path, num=3):
     # Load the CSV file
     df = pd.read_csv(file_path)
 
@@ -48,25 +48,25 @@ def load_and_preprocess_data(file_path):
         return complex(s.strip('()').replace('j', 'j').replace(' ', ''))
 
     # Extract and convert input time series (Input_0 to Input_2047)
-    input_columns = [f'Input_{i}' for i in range(3)]  # 0 to 2047
-    input_series = df[input_columns].applymap(to_complex).values
+    input_columns = [f'Input_{i}' for i in range(num)]  # 0 to 2047
+    input_series = df[input_columns].map(to_complex).values
 
     # Prepare input data with shape (num_samples, 4, 2048)
-    input_data = np.zeros((len(features), 4, 3), dtype=np.complex128)
+    input_data = np.zeros((len(features), 4, num), dtype=np.complex128)
     
     # Repeat feature values 2048 times for the first 3 channels
-    for i in range(3):
+    for i in range(num):
         input_data[:, i, :] = np.tile(features[:, i], (3, 1)).T
     
     # Add the input series as the 4th channel
     input_data[:, 3, :] = input_series
 
     # Extract and convert output time series (Output_0 to Output_2047)
-    output_columns = [f'Output_{i}' for i in range(3)]  # 0 to 2047
-    output_series = df[output_columns].applymap(to_complex).values
+    output_columns = [f'Output_{i}' for i in range(num)]  # 0 to 2047
+    output_series = df[output_columns].map(to_complex).values
 
     # Reshape output to (num_samples, 1, 2048)
-    output_data = output_series.reshape(-1, 1, 3)
+    output_data = output_series.reshape(-1, 1, num)
     return input_data, output_data
 
 
@@ -87,16 +87,14 @@ def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2):
     return train_loader, test_loader
 
 # Usage
-file_path = "/home/robert/repo/neuraloperator/examples/trial.csv"
-input_data, output_series = load_and_preprocess_data(file_path)
+file_path = "/raid/robert/em/SHG_output(in).csv" #"/home/robert/repo/neuraloperator/examples/trial.csv"
+input_data, output_series = load_and_preprocess_data(file_path, num=3)
 train_loader, test_loader = create_dataloaders(input_data, output_series)
 
 # Print some information about the loaded data
 print(f"Total number of samples: {len(input_data)}")
 print(f"Input data shape: {input_data.shape}")
 print(f"Output series shape: {output_series.shape}")
-print(f"Number of batches in train_loader: {len(train_loader)}")
-print(f"Number of batches in test_loader: {len(test_loader)}")
 
 # Example of accessing a batch
 for batch_input_series, batch_output_series in train_loader:
@@ -113,7 +111,7 @@ device = 'cuda'
 # %%
 # We create a tensorized FNO model
 
-model = FNO(n_modes=(2,), in_channels=4, out_channels=1, hidden_channels=2, n_layers=1, complex_spatial_data=True)
+model = FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -131,7 +129,7 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
 # Creating the losses
-l2loss = LpLoss(d=1, p=2)
+l2loss = torch.nn.MSELoss() #LpLoss(d=1, p=2)
 
 train_loss = l2loss
 eval_losses={'l2': l2loss}
@@ -152,7 +150,7 @@ callbacks = [BasicLoggerCallback()]
 
 # %% 
 # Create the trainer
-trainer = Trainer(model=model, n_epochs=5,
+trainer = Trainer(model=model, n_epochs=500,
                   device=device,
                   callbacks=callbacks,
                   data_processor=data_processor,

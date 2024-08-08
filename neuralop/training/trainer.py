@@ -279,6 +279,7 @@ class Trainer:
                     with amp.autocast(enabled=True):
                         out  = self.model(**sample)
                 else:
+                    """
                     for t in range(0, 3):
                         sample['y'] = y[..., t:t+1]
                         if t == 0:
@@ -287,15 +288,15 @@ class Trainer:
                         sample['x'] = x
                         out = self.model(**sample)
                         #print("Output", out.shape)
-                        """
                         sample['y'] = sample['y'].view(batch, -1)
                         loss1 += training_loss(out.view(batch, -1), **sample)
                         if t == 0:
                             pred = out
                         else:
                             pred = torch.cat((pred, out), -1)
-                        xx = torch.cat((xx[..., 1:], out), dim=-1)"""
-
+                        xx = torch.cat((xx[..., 1:], out), dim=-1)
+                        """
+                    out = self.model(sample['x'])
 
                 if self.data_processor is not None:
                     out, sample = self.data_processor.postprocess(out, sample)
@@ -326,7 +327,7 @@ class Trainer:
                             else:
                                 if self.burgers:
                                     #print(out.squeeze().shape, sample['y'].shape)
-                                    loss = training_loss(out.float().squeeze(), **sample)
+                                    loss = training_loss(torch.view_as_real(out), torch.view_as_real(y)) #training_loss(out.float().squeeze(), **sample)
                                 else:
                                     loss = training_loss(out.float(), **sample)
                         elif isinstance(out, dict):
@@ -421,15 +422,13 @@ class Trainer:
                         sample = self.data_processor.preprocess(sample, mode = "Val")
                 else:
                     # load data to device if no preprocessor exists
-                    if self.burgers:
-                        x = sample[0]
-                        y = sample[1]
-                        x = x.to(self.device)
-                        y = y.to(self.device)
-                        sample = {'x': x, 'y': y}
-                        sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
-                    else:
-                        sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+                    x = sample[0]
+                    y = sample[1]
+                    x = x.to(self.device)
+                    y = y.to(self.device)
+                    sample = {'x': x, 'y': y}
+                    sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+
 
                 n_samples += sample['y'].size(0)
 
@@ -438,31 +437,8 @@ class Trainer:
                 batch, res = x.shape[0], x.shape[1]
                 loss1 = 0.
                 loss2 = 0.
-                if self.nstime:
-                    x = sample['x']
-                    grid = self.get_grid(x.shape, x.device)
-                    x = torch.cat((x, grid), dim=-1)
-                    sample['x'] = x.permute(0, 4, 1, 2, 3)
-            
-                    out = self.model(**sample).reshape(batch, res, res, 10)
-                elif self.ns2dtime:
-                    for t in range(0, 10):
-                        sample['y'] = y[..., t:t+1]
-                        if t == 0:
-                            xx = sample['x']
-                        x = xx
-                        sample['x'] = x.permute(0, 3, 1, 2)
-                        out = self.model(**sample).permute(0, 2, 3, 1)
-                        sample['y'] = sample['y'].view(batch, -1)
-                        loss1 += loss_dict["h1"](out.view(batch, -1), **sample)
-                        loss2 += loss_dict["l2"](out.view(batch, -1), **sample)
-                        if t == 0:
-                            pred = out
-                        else:
-                            pred = torch.cat((pred, out), -1)
-                        xx = torch.cat((xx[..., 1:], out), dim=-1)
-                else:
-                    out = self.model(sample['x'])
+
+                out = self.model(sample['x'])
 
                 if self.data_processor is not None:
                     out, sample = self.data_processor.postprocess(out, sample)
@@ -488,7 +464,7 @@ class Trainer:
                                     val_loss = loss2
                             else:
                                 if self.burgers:
-                                    val_loss = loss(out.squeeze(), **sample)
+                                    val_loss = loss(torch.view_as_real(out), torch.view_as_real(y)) #loss(out.squeeze(), **sample)
                                 else:
                                     val_loss = loss(out, **sample)
                         elif isinstance(out, dict):
@@ -510,13 +486,3 @@ class Trainer:
         del out
 
         return errors
-
-    def get_grid(self, shape, device):
-        batchsize, size_x, size_y, size_z = shape[0], shape[1], shape[2], shape[3]
-        gridx = torch.tensor(np.linspace(0, 1, size_x), dtype=torch.float)
-        gridx = gridx.reshape(1, size_x, 1, 1, 1).repeat([batchsize, 1, size_y, size_z, 1])
-        gridy = torch.tensor(np.linspace(0, 1, size_y), dtype=torch.float)
-        gridy = gridy.reshape(1, 1, size_y, 1, 1).repeat([batchsize, size_x, 1, size_z, 1])
-        gridz = torch.tensor(np.linspace(0, 1, size_z), dtype=torch.float)
-        gridz = gridz.reshape(1, 1, 1, size_z, 1).repeat([batchsize, size_x, size_y, 1, 1])
-        return torch.cat((gridx, gridy, gridz), dim=-1).to(device)
