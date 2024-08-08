@@ -27,8 +27,8 @@ from sklearn.model_selection import train_test_split
 
 class SHGTimeSeriesDataset(Dataset):
     def __init__(self, input_series, output_series):
-        self.input_series = torch.FloatTensor(input_series)
-        self.output_series = torch.FloatTensor(output_series)
+        self.input_series = torch.tensor(input_series, dtype=torch.complex64)
+        self.output_series = torch.tensor(output_series, dtype=torch.complex64)
 
     def __len__(self):
         return len(self.input_series)
@@ -102,6 +102,7 @@ print(f"Number of batches in test_loader: {len(test_loader)}")
 for batch_input_series, batch_output_series in train_loader:
     print("Batch input series shape:", batch_input_series.shape)
     print("Batch output series shape:", batch_output_series.shape)
+    print("Dtype", batch_input_series.dtype, batch_output_series.dtype)
     break  # Just print the first batch and exit the loop
 # Usage
 
@@ -112,7 +113,7 @@ device = 'cuda'
 # %%
 # We create a tensorized FNO model
 
-model = FNO(n_modes=(32,), in_channels=4, out_channels=1, hidden_channels=128, n_layers=4, complex_spatial_data=True)
+model = FNO(n_modes=(2,), in_channels=4, out_channels=1, hidden_channels=2, n_layers=1, complex_spatial_data=True)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -131,10 +132,9 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 # %%
 # Creating the losses
 l2loss = LpLoss(d=1, p=2)
-h1loss = H1Loss(d=1)
 
-train_loss = h1loss
-eval_losses={'h1': h1loss, 'l2': l2loss}
+train_loss = l2loss
+eval_losses={'l2': l2loss}
 
 
 # %%
@@ -152,7 +152,7 @@ callbacks = [BasicLoggerCallback()]
 
 # %% 
 # Create the trainer
-trainer = Trainer(model=model, n_epochs=100,
+trainer = Trainer(model=model, n_epochs=5,
                   device=device,
                   callbacks=callbacks,
                   data_processor=data_processor,

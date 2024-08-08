@@ -270,7 +270,7 @@ class Trainer:
                     
                 x = sample['x']
                 y = sample['y']
-                print(x.shape, y.shape)
+                #print(x.shape, y.shape, x.dtype, y.dtype)
                 batch, res = x.shape[0], x.shape[1]
                 
                 loss1 = 0.
@@ -286,14 +286,15 @@ class Trainer:
                         x = xx
                         sample['x'] = x
                         out = self.model(**sample)
-                        print("Output", out.shape)
+                        #print("Output", out.shape)
+                        """
                         sample['y'] = sample['y'].view(batch, -1)
                         loss1 += training_loss(out.view(batch, -1), **sample)
                         if t == 0:
                             pred = out
                         else:
                             pred = torch.cat((pred, out), -1)
-                        xx = torch.cat((xx[..., 1:], out), dim=-1)
+                        xx = torch.cat((xx[..., 1:], out), dim=-1)"""
 
 
                 if self.data_processor is not None:
