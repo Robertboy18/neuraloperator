@@ -220,6 +220,7 @@ class H1Loss(object):
 
     def uniform_h(self, x):
         h = [0.0]*self.d
+        #print(self.d)
         for j in range(self.d, 0, -1):
             h[-j] = self.L[-j]/x.size(-j)
         
