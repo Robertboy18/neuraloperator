@@ -326,7 +326,7 @@ class Trainer:
                                 loss += loss1
                             else:
                                 if self.burgers:
-                                    #print(out.squeeze().shape, sample['y'].shape)
+                                    #print(out.shape, y.shape)
                                     loss = training_loss(torch.view_as_real(out), torch.view_as_real(y)) #training_loss(out.float().squeeze(), **sample)
                                 else:
                                     loss = training_loss(out.float(), **sample)
@@ -335,6 +335,7 @@ class Trainer:
                 if regularizer:
                     loss += regularizer.loss
                 #with record_function("## backward ##"):  
+                #print(loss)
                 loss.backward()
                 del out
                 #with record_function("## optimizer ##"):
@@ -380,6 +381,8 @@ class Trainer:
             if self.callbacks:
                 self.callbacks.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
         #prof.export_memory_timeline(f"burgers_rank_{self.rank}.html", device="cuda:0")
+            if epoch % 20 == 0:
+                torch.save(self.model.state_dict(), f'/raid/robert/em/model_weights/model_{epoch}.pth')
         return errors
 
     def evaluate(self, loss_dict, data_loader,

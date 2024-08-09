@@ -55,8 +55,8 @@ def load_and_preprocess_data(file_path, num=3):
     input_data = np.zeros((len(features), 4, num), dtype=np.complex128)
     
     # Repeat feature values 2048 times for the first 3 channels
-    for i in range(num):
-        input_data[:, i, :] = np.tile(features[:, i], (3, 1)).T
+    for i in range(3):
+        input_data[:, i, :] = np.tile(features[:, i], (num, 1)).T
     
     # Add the input series as the 4th channel
     input_data[:, 3, :] = input_series
@@ -87,8 +87,8 @@ def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2):
     return train_loader, test_loader
 
 # Usage
-file_path = "/raid/robert/em/SHG_output(in).csv" #"/home/robert/repo/neuraloperator/examples/trial.csv"
-input_data, output_series = load_and_preprocess_data(file_path, num=3)
+file_path = "/raid/robert/em/SHG_output_final.csv" #"/home/robert/repo/neuraloperator/examples/trial.csv"
+input_data, output_series = load_and_preprocess_data(file_path, num=2048)
 train_loader, test_loader = create_dataloaders(input_data, output_series)
 
 # Print some information about the loaded data
@@ -111,7 +111,7 @@ device = 'cuda'
 # %%
 # We create a tensorized FNO model
 
-model = FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
+model = FNO(n_modes=(64,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)#FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -129,10 +129,11 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
 # Creating the losses
-l2loss = torch.nn.MSELoss() #LpLoss(d=1, p=2)
+l4loss = LpLoss(d=2, p=4) #torch.nn.MSELoss() #LpLoss(d=1, p=4)
+H1Loss1 = H1Loss(d=2)
 
-train_loss = l2loss
-eval_losses={'l2': l2loss}
+train_loss = l4loss #H1Loss1 
+eval_losses= {"L4": l4loss} #{'H1': H1Loss1}
 
 
 # %%
@@ -149,8 +150,9 @@ sys.stdout.flush()
 callbacks = [BasicLoggerCallback()]    
 
 # %% 
+epochs = 100
 # Create the trainer
-trainer = Trainer(model=model, n_epochs=500,
+trainer = Trainer(model=model, n_epochs=epochs,
                   device=device,
                   callbacks=callbacks,
                   data_processor=data_processor,
@@ -170,3 +172,5 @@ trainer.train(train_loader=train_loader,
               regularizer=False, 
               training_loss=train_loss,
               eval_losses=eval_losses)
+
+torch.save(model.state_dict(), f'/home/robert/repo/neuraloperator/examples/model_weights/model_{epochs}.pth')

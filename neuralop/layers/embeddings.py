@@ -130,10 +130,14 @@ class GridEmbeddingND(nn.Module):
             if data.ndim == self.dim + 1:
                 data = data.unsqueeze(0)
         batch_size = data.shape[0]
+        #print("HELLO")
+        #print(data.device)
         grids = self.grid(spatial_dims=data.shape[2:],
                           device=data.device,
                           dtype=data.dtype)
         grids = [x.repeat(batch_size, *[1] * (self.dim+1)) for x in grids]
+        #print(grids[0].device)
+        #print("EXIT")
         out =  torch.cat((data, *grids),
                          dim=1)
         return out

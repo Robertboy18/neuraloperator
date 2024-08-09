@@ -116,16 +116,16 @@ print('GVD at %0.1f nm = %0.1f fs^2/mm' %(λ2/nm, gvd_2/(fs**2/mm) ) )
 # %%
 # (1) Length of the poling region can be varied from ~2 mm to ~15 mm
 #L_array = np.linspace(2,15,10)*mm
-L_array = np.linspace(2,15,2)*mm
+L_array = np.linspace(2,15,10)*mm
 
 # (2) Poling period mismatch can be varied from ~-50 nm to 50 nm
 #pp_mismatch_array = np.linspace(-50,50,10)*nm
-pp_mismatch_array = np.linspace(-50,50,2)*nm
+pp_mismatch_array = np.linspace(-50,50,10)*nm
 
 # (3) Pulse energy parameter can be varied from few fJ to few 1000s of fJ
 # We can first start from lower energies
 #pump_energy_array = np.linspace(5,1000,10)*fJ
-pump_energy_array = np.linspace(5,1000,2)*fJ
+pump_energy_array = np.linspace(5,1000,10)*fJ
 
 # %% [markdown]
 # ## Simulation Loops
@@ -192,8 +192,8 @@ for L in L_array:
             print('Input pulse energy = %0.3f pJ' %(a_in.energy_td()/pJ))
             print('Output pulse energy = %0.3f pJ' %(a_out.energy_td()/pJ))
 
-            a_out.plot_magsq()
-            a_out.plot_spectrum()
+            #a_out.plot_magsq()
+            #a_out.plot_spectrum()
 
             # =========================================================================
             # ====================== Save Data in .csv ================================
@@ -223,13 +223,13 @@ for L in L_array:
             
 # Define the column headers
 
-columns = ['Poling Region Length (mm)', 'Poling Period Mismatch (nm)', 'Pump Energy (fJ)'] + [f'Input_{i}' for i in N] + [f'Output_{i}' for i in N]
+columns = ['Poling Region Length (mm)', 'Poling Period Mismatch (nm)', 'Pump Energy (fJ)'] + [f'Input_{i}' for i in range(N)] + [f'Output_{i}' for i in range(N)]
 
 # Create a DataFrame from the data
 df = pd.DataFrame(data, columns=columns)
 
 # Save the DataFrame to a CSV file
-csv_file_path = 'SHG_output.csv'
+csv_file_path = "/home/robert/repo/neuraloperator/examples/SHG_output_final.csv"
 df.to_csv(csv_file_path, index=False)
 
 print(f"Data saved to {csv_file_path}")
