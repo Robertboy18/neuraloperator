@@ -96,7 +96,7 @@ def predict_and_visualize_complex(model, input_data, actual_output, features):
     plt.show()
     
 def main():
-    model_path = '/home/robert/repo/neuraloperator/examples/model_weights_small/model_20.pth'
+    model_path = '/raid/robert/em/model_weights/model_100.pth'
     data_path = '/raid/robert/em/SHG_output_final.csv'
     
     model = load_pretrained_model(model_path)
