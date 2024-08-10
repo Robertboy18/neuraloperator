@@ -327,7 +327,11 @@ class Trainer:
                             else:
                                 if self.burgers:
                                     #print(out.shape, y.shape)
-                                    loss = training_loss(torch.view_as_real(out), torch.view_as_real(y)) #training_loss(out.float().squeeze(), **sample)
+                                    if out.dtype == torch.complex64:
+                                        loss = training_loss(torch.view_as_real(out), torch.view_as_real(y)) 
+                                    else:
+                                        loss = training_loss(out, y)
+                                    #training_loss(out.float().squeeze(), **sample)
                                 else:
                                     loss = training_loss(out.float(), **sample)
                         elif isinstance(out, dict):
@@ -467,7 +471,11 @@ class Trainer:
                                     val_loss = loss2
                             else:
                                 if self.burgers:
-                                    val_loss = loss(torch.view_as_real(out), torch.view_as_real(y)) #loss(out.squeeze(), **sample)
+                                    if out.dtype == torch.complex64:
+                                        val_loss = loss(torch.view_as_real(out), torch.view_as_real(y)) 
+                                    else:
+                                        print("Print example values", out[0, 0, 1000:1010], y[0, 0, 1000:1010])
+                                        val_loss = loss(out, y)#loss(out.squeeze(), **sample)
                                 else:
                                     val_loss = loss(out, **sample)
                         elif isinstance(out, dict):
