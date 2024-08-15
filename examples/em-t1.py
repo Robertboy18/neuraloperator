@@ -36,7 +36,7 @@ class SHGTimeSeriesDataset(Dataset):
     def __getitem__(self, idx):
         return self.input_series[idx], self.output_series[idx]
 
-def load_and_preprocess_data(file_path, num=3):
+def load_and_preprocess_data(file_path, num=3, samples=1000):
     # Load the CSV file
     df = pd.read_csv(file_path)
 
@@ -49,7 +49,7 @@ def load_and_preprocess_data(file_path, num=3):
 
     # Extract and convert input time series (Input_0 to Input_2047)
     input_columns = [f'Input_{i}' for i in range(num)]  # 0 to 2047
-    input_series = df[input_columns].map(to_complex).values
+    input_series = df[input_columns].map(to_complex).values[:samples]
 
     # Prepare input data with shape (num_samples, 4, 2048)
     input_data = np.zeros((len(features), 4, num), dtype=np.complex128)
@@ -63,7 +63,7 @@ def load_and_preprocess_data(file_path, num=3):
 
     # Extract and convert output time series (Output_0 to Output_2047)
     output_columns = [f'Output_{i}' for i in range(num)]  # 0 to 2047
-    output_series = df[output_columns].map(to_complex).values
+    output_series = df[output_columns].map(to_complex).values[:samples]
 
     # Reshape output to (num_samples, 1, 2048)
     output_data = output_series.reshape(-1, 1, num)
@@ -111,7 +111,7 @@ device = 'cuda'
 # %%
 # We create a tensorized FNO model
 
-model = FNO(n_modes=(64,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)#FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
+model = FNO(n_modes=(256,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=4, complex_spatial_data=True, domain_padding=None)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -129,11 +129,11 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
 # Creating the losses
-l4loss = LpLoss(d=2, p=4) #torch.nn.MSELoss() #LpLoss(d=1, p=4)
+l4loss = torch.nn.MSELoss() #LpLoss(d=1, p=4)
 H1Loss1 = H1Loss(d=2)
 
 train_loss = l4loss #H1Loss1 
-eval_losses= {"L4": l4loss} #{'H1': H1Loss1}
+eval_losses= {"L2": l4loss} #{'H1': H1Loss1}
 
 
 # %%
@@ -173,4 +173,4 @@ trainer.train(train_loader=train_loader,
               training_loss=train_loss,
               eval_losses=eval_losses)
 
-torch.save(model.state_dict(), f'/home/robert/repo/neuraloperator/examples/model_weights/model_{epochs}.pth')
+torch.save(model.state_dict(), f'/raid/robert/em/model.pt')

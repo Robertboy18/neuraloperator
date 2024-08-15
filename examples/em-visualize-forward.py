@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 import pandas as pd
 
 def load_pretrained_model(model_path):
-    model = FNO(n_modes=(64,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
+    model = FNO(n_modes=(256,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=6, complex_spatial_data=True, domain_padding=None)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
     model.load_state_dict(torch.load(model_path))
     model.eval()
     return model
@@ -46,8 +46,8 @@ def predict_and_visualize(model, input_data, actual_output, features):
     
     print(f"Input shape: {input_data.shape}, Output shape: {actual_output.shape}, Predicted shape: {predicted_output.shape}")
     for i in range(num_samples):
-        axs[i].plot(np.abs(actual_output[i, 0, :]), label='Actual')
-        axs[i].plot(np.abs(predicted_output[i, 0, :]), label='Predicted')
+        axs[i].plot(np.abs(actual_output[i, 0, :])**2, label='Actual')
+        axs[i].plot(np.abs(predicted_output[i, 0, :])**2, label='Predicted')
         axs[i].set_title(f"Sample {i+1}: Length={features[i,0]:.2f}, Mismatch={features[i,1]:.2f}, Energy={features[i,2]:.2f}")
         axs[i].set_xlabel('Time Step')
         axs[i].set_ylabel('Magnitude')
@@ -96,11 +96,11 @@ def predict_and_visualize_complex(model, input_data, actual_output, features):
     plt.show()
     
 def main():
-    model_path = '/raid/robert/em/model_weights/model_100.pth'
+    model_path = '/raid/robert/em/model.pt'
     data_path = '/raid/robert/em/SHG_output_final.csv'
     
     model = load_pretrained_model(model_path)
-    input_data, actual_output, features = load_and_preprocess_data(data_path, num_samples=10)
+    input_data, actual_output, features = load_and_preprocess_data(data_path, num_samples=5)
     
     predict_and_visualize(model, input_data, actual_output, features)
     predict_and_visualize_complex(model, input_data, actual_output, features)
