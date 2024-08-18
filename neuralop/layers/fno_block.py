@@ -49,13 +49,13 @@ class FNOBlocks(nn.Module):
         if isinstance(n_modes, int):
             n_modes = [n_modes]
         self._n_modes = n_modes
+        self._max_n_modes = max_n_modes
         self.n_dim = len(n_modes)
 
         self.output_scaling_factor: Union[
             None, List[List[float]]
         ] = validate_scaling_factor(output_scaling_factor, self.n_dim, n_layers)
 
-        self.max_n_modes = max_n_modes
         self.fno_block_precision = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -83,7 +83,7 @@ class FNOBlocks(nn.Module):
             self.out_channels,
             self.n_modes,
             output_scaling_factor=output_scaling_factor,
-            max_n_modes=max_n_modes,
+            max_n_modes=self.max_n_modes,
             rank=rank,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
@@ -261,11 +261,20 @@ class FNOBlocks(nn.Module):
     @property
     def n_modes(self):
         return self._n_modes
+    
+    @property
+    def max_n_modes(self):
+        return self._max_n_modes
 
     @n_modes.setter
     def n_modes(self, n_modes):
         self.convs.n_modes = n_modes
         self._n_modes = n_modes
+        
+    @max_n_modes.setter
+    def max_n_modes(self, max_n_modes):
+        self.convs.max_n_modes = max_n_modes
+        self._max_n_modes = max_n_modes
 
     def get_block(self, indices):
         """Returns a sub-FNO Block layer from the jointly parametrized main block

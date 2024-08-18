@@ -44,7 +44,7 @@ default: &DEFAULT
     stabilizer: None # or 'tanh'
 
   incremental:
-    incremental_loss_gap: False
+    incremental_loss_gap: True
     incremental_grad: False
     incremental_res: False
     grad_eps: 0.9999
@@ -56,7 +56,7 @@ default: &DEFAULT
     
   # Optimizer
   opt:
-    n_epochs: 500
+    n_epochs: 10
     learning_rate: 1e-3
     training_loss: 'l2'
     weight_decay: 1e-4

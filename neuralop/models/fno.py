@@ -129,6 +129,7 @@ class FNO(BaseModel, name='FNO'):
         # See the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
         self._n_modes = n_modes
+        self._max_n_modes = max_n_modes
         self.hidden_channels = hidden_channels
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
@@ -182,7 +183,7 @@ class FNO(BaseModel, name='FNO'):
             preactivation=preactivation,
             fno_skip=fno_skip,
             mlp_skip=mlp_skip,
-            max_n_modes=max_n_modes,
+            max_n_modes=self.max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
             fft_norm=fft_norm,
@@ -262,11 +263,20 @@ class FNO(BaseModel, name='FNO'):
     @property
     def n_modes(self):
         return self._n_modes
+    
+    @property
+    def max_n_modes(self):
+        return self._max_n_modes    
 
     @n_modes.setter
     def n_modes(self, n_modes):
         self.fno_blocks.n_modes = n_modes
         self._n_modes = n_modes
+        
+    @max_n_modes.setter
+    def max_n_modes(self, max_n_modes):
+        self.fno_blocks.max_n_modes = max_n_modes
+        self._max_n_modes = max_n_modes
 
 
 class FNO1d(FNO):

@@ -1,5 +1,6 @@
 import sys
-
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -16,9 +17,8 @@ from neuralop.models import FNO
 from neuralop.training.callbacks import IncrementalCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.datasets import data_transforms
-import os
 
-os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/robert_wandb/")
+#os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/robert_wandb/")
 
 # Read the configuration
 config_name = "default"
@@ -82,7 +82,7 @@ data_path = "/pscratch/sd/r/rgeorge/data/vorticty3.pt"
 # Loading the Navier-Stokes dataset in 128x128 resolution
 # full data T = 5000
 # low data T = 50
-train_loader, test_loaders, data_processor = load_ns_high(data_path, ntrain=8, ntest=2, subsampling_rate=1, batch_size=50, T = 50, in_dim = 1, out_dim = 1, ntimeindex = 1, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
+train_loader, test_loaders, data_processor = load_ns_high(data_path, ntrain=1, ntest=1, subsampling_rate=1, batch_size=50, T = 50, in_dim = 1, out_dim = 1, ntimeindex = 1, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:

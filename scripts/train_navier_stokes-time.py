@@ -1,4 +1,6 @@
 import sys
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import torch
@@ -16,7 +18,6 @@ from neuralop.models import FNO
 from neuralop.training.callbacks import IncrementalCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.datasets import data_transforms
-import os
 import matplotlib.pyplot as plt
 
 #os.environ["WANDB_DIR"] = os.path.abspath("/pscratch/sd/r/rgeorge/robert_wandb/")
@@ -83,7 +84,7 @@ test_path = "/raid/robert/NavierStokes_V1e-5_N1200_T20.mat"
 # Loading the Navier-Stokes dataset in 128x128 resolution
 # full data 1000, 200
 # low data 250, 50
-train_loader, test_loaders, data_processor = load_ns_time(train_path, test_path, ntrain=1000, ntest=200, channel_dim = 1, subsampling_rate=1, batch_size=32, T = 10, time = True, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
+train_loader, test_loaders, data_processor = load_ns_time(train_path, test_path, ntrain=100, ntest=10, channel_dim = 1, subsampling_rate=1, batch_size=32, T = 10, time = True, shuffle=False, num_workers=2, pin_memory=True, persistent_workers=True)
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
@@ -100,7 +101,7 @@ if data_processor is not None:
 #model = model.to(device)
 pred1, pred2 = None, None
 modes = int(config.mode)
-for i in [10, 90]:
+for i in [10]:
     s1 = tuple([i, i])
     if config.incremental.incremental_loss_gap or config.incremental.incremental_grad:
         s = (2,2)
@@ -200,7 +201,7 @@ for i in [10, 90]:
         sys.stdout.flush()
 
     if i == 10:
-        epochs = 1
+        epochs = 2
     else:
         epochs = 100
     trainer = Trainer(
@@ -247,21 +248,67 @@ for i in [10, 90]:
         eval_losses=eval_losses,
     )
 
-    train_dataset = train_loader.dataset
-    # Which sample to view
-    index = 0
+    torch.save(model.state_dict(), f"model_{i}.pt")
+    
+    
+    model1 = FNO(
+        max_n_modes=(10, 10),
+        n_modes=(5, 5),
+        hidden_channels=128,
+        in_channels=10,
+        out_channels=1,
+    ).to(device)
+        
+    model1.load_state_dict(torch.load(f"model_{i}.pt"))
+    
+    model1.max_n_modes = (20, 20)
 
-    data = train_dataset[index]
-    x = data['x']
-    y = data['y']
-    print(x.shape, y.shape)
-    with torch.no_grad():
-        model.eval()
-        pred = model(x.unsqueeze(0).permute(0, 3, 1, 2).to(device))
-        if i == 10:
-            pred1 = pred.detach().squeeze().cpu()
-        else:
-            pred2 = pred.detach().squeeze().cpu()
+    trainer = Trainer(
+        model=model1,
+        n_epochs=20,
+        data_processor=data_transform,
+        device=device,
+        amp_autocast=config.opt.amp_autocast,
+        callbacks=callbacks,
+        log_test_interval=config.wandb.log_test_interval,
+        log_output=config.wandb.log_output,
+        use_distributed=config.distributed.use_distributed,
+        verbose=config.verbose,
+        wandb_log = config.wandb.log,
+        ns2dtime=config.ns2dtime,
+        nstime=config.nstime
+    )
+    
+    trainer.train(
+        train_loader=train_loader,
+        test_loaders=test_loaders,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        regularizer=False,
+        training_loss=train_loss,
+        eval_losses=eval_losses,
+    )
+    
+    
+    
+    
+    
+"""
+train_dataset = train_loader.dataset
+# Which sample to view
+index = 0
+
+data = train_dataset[index]
+x = data['x']
+y = data['y']
+print(x.shape, y.shape)
+with torch.no_grad():
+    model.eval()
+    pred = model(x.unsqueeze(0).permute(0, 3, 1, 2).to(device))
+    if i == 10:
+        pred1 = pred.detach().squeeze().cpu()
+    else:
+        pred2 = pred.detach().squeeze().cpu()
 
 fig = plt.figure(figsize=(15, 5))
 ax = fig.add_subplot(1, 4, 1)
@@ -282,3 +329,4 @@ plt.savefig('darcy_flow_sample.png')
 fig.show()
 if config.wandb.log and is_logger:
     wandb.finish()
+"""
