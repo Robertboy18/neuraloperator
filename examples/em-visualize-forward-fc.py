@@ -7,14 +7,15 @@ from neuralop.models import FNO
 from torch.utils.data import DataLoader
 import pandas as pd
 from scipy.fft import fft
+from neuralop.layers.fourier_continuation import FCLegendre
 
 def load_pretrained_model(model_path):
-    model = FNO(n_modes=(256,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=4, complex_spatial_data=True, domain_padding=1.0)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
+    model = FNO(n_modes=(64,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=4, complex_spatial_data=True, domain_padding=1.0)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
     model.load_state_dict(torch.load(model_path))
     model.eval()
     return model
 
-def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False):
+def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False, use_fc=False):
     # Load the CSV file
     df = pd.read_csv(file_path)
 
@@ -58,17 +59,24 @@ def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False):
 
     return input_data, output_data, features
 
-def predict_and_visualize(model, input_data, actual_output, features):
+def predict_and_visualize(model, input_data, actual_output, features, use_fc=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(input_data.shape, actual_output.shape)
     model = model.to(device)
     
     with torch.no_grad():
         input_tensor = torch.tensor(input_data, dtype=torch.complex64).to(device)
+        if use_fc:
+            number_additional_points=16
+            n = 3
+            d= number_additional_points
+            fc = FCLegendre(n, d, dtype=torch.complex64)
+            input_tensor = fc(torch.tensor(input_data, dtype=torch.complex64))
+            actual_output = fc(torch.tensor(actual_output, dtype=torch.complex64))
         predicted_output = model(input_tensor).cpu().numpy()
     
     num_samples = input_data.shape[0]
-    fig, axs = plt.subplots(num_samples, 1, figsize=(15, 5*num_samples))
+    fig, axs = plt.subplots(num_samples, 2, figsize=(15, 5*num_samples))
     if num_samples == 1:
         axs = [axs]
         
@@ -76,61 +84,30 @@ def predict_and_visualize(model, input_data, actual_output, features):
     
     print(f"Input shape: {input_data.shape}, Output shape: {actual_output.shape}, Predicted shape: {predicted_output.shape}")
     for i in range(num_samples):
-        axs[i].plot(np.abs(actual_output[i, 0, :])**2, label='Actual')
-        axs[i].plot(np.abs(predicted_output[i, 0, :])**2, label='Predicted')
-        axs[i].set_title(f"Sample {i+1}: Length={features[i,0]:.2f}, Mismatch={features[i,1]:.2f}, Energy={features[i,2]:.2f}")
-        axs[i].set_xlabel('Time Step')
-        axs[i].set_ylabel('Magnitude')
-        axs[i].legend()
+        axs[i, 1].plot(np.abs(actual_output[i, 0, :])**2, label='Actual')
+        axs[i, 1].plot(np.abs(predicted_output[i, 0, :])**2, label='Predicted')
+        axs[i, 1].set_title(f"Sample {i+1}: Length={features[i,0]:.2f}, Mismatch={features[i,1]:.2f}, Energy={features[i,2]:.2f}")
+        axs[i, 1].set_xlabel('Time Step')
+        axs[i, 1].set_ylabel('Magnitude')
+        axs[i, 1].legend()
+    # now plot the input samples
+    for i in range(num_samples):
+        axs[i, 0].plot(np.abs(input_data[i, 3, :])**2)
+        axs[i, 0].set_title(f"Input Sample {i+1}: Length={features[i,0]:.2f}, Mismatch={features[i,1]:.2f}, Energy={features[i,2]:.2f}")
+        axs[i, 0].set_xlabel('Time Step')
+        axs[i, 0].set_ylabel('Magnitude')
     
     plt.tight_layout()
     plt.savefig('Forward-problem-em.png')
     plt.show()
 
-def predict_and_visualize_complex(model, input_data, actual_output, features):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
-    print(input_data.shape, actual_output.shape)
-    with torch.no_grad():
-        input_tensor = torch.tensor(input_data, dtype=torch.complex64).to(device)
-        predicted_output = model(input_tensor).cpu().numpy()
-    
-    num_samples = input_data.shape[0]
-    fig, axs = plt.subplots(num_samples, 2, figsize=(20, 10*num_samples))
-    if num_samples == 1:
-        axs = axs.reshape(1, 2)
-    
-    actual_output = np.array(actual_output).reshape(num_samples, 1, 2048)
-    
-    print(f"Input shape: {input_data.shape}, Output shape: {actual_output.shape}, Predicted shape: {predicted_output.shape}")
-    
-    for i in range(num_samples):
-        # Plot real part
-        axs[i, 0].plot(actual_output[i, 0, :].real, label='Actual (Real)')
-        axs[i, 0].plot(predicted_output[i, 0, :].real, label='Predicted (Real)')
-        axs[i, 0].set_title(f"Sample {i+1} - Real Part\nLength={features[i,0]:.2f}, Mismatch={features[i,1]:.2f}, Energy={features[i,2]:.2f}")
-        axs[i, 0].set_xlabel('Time Step')
-        axs[i, 0].set_ylabel('Real Value')
-        axs[i, 0].legend()
-        
-        # Plot imaginary part
-        axs[i, 1].plot(actual_output[i, 0, :].imag, label='Actual (Imaginary)')
-        axs[i, 1].plot(predicted_output[i, 0, :].imag, label='Predicted (Imaginary)')
-        axs[i, 1].set_title(f"Sample {i+1} - Imaginary Part\nLength={features[i,0]:.2f}, Mismatch={features[i,1]:.2f}, Energy={features[i,2]:.2f}")
-        axs[i, 1].set_xlabel('Time Step')
-        axs[i, 1].set_ylabel('Imaginary Value')
-        axs[i, 1].legend()
-    
-    plt.tight_layout()
-    plt.savefig('Forward-problem-em-complex.png')
-    plt.show()
-    
+
 def main():
-    model_path = '/raid/robert/em/model1.pt'
+    model_path = '/raid/robert/em/model.pt'
     data_path = '/raid/robert/em/SHG_output_final.csv'
     
     model = load_pretrained_model(model_path)
-    input_data, actual_output, features = load_and_preprocess_data(data_path, samples=10, use_fft=True)
+    input_data, actual_output, features = load_and_preprocess_data(data_path, samples=5, use_fft=True)
     
     predict_and_visualize(model, input_data, actual_output, features)
     #predict_and_visualize_complex(model, input_data, actual_output, features)

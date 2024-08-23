@@ -1,15 +1,12 @@
+
 # copy dependencies from transformers/optimization.py
 import math
 import warnings
-from typing import Callable, Iterable, Tuple
+from typing import Callable, Iterable, Tuple, Union, List
 
 import torch
 from torch import nn
 from torch.optim import Optimizer
-
-from transformers.utils.versions import require_version
-
-from .galore_projector import GaLoreProjector, GaLoreProjectorTensor
 
 
 class AdamW(Optimizer):
@@ -17,21 +14,20 @@ class AdamW(Optimizer):
     Implements Adam algorithm with weight decay fix as introduced in [Decoupled Weight Decay
     Regularization](https://arxiv.org/abs/1711.05101).
 
-    Parameters:
-        params (`Iterable[nn.parameter.Parameter]`):
-            Iterable of parameters to optimize or dictionaries defining parameter groups.
-        lr (`float`, *optional*, defaults to 0.001):
-            The learning rate to use.
-        betas (`Tuple[float,float]`, *optional*, defaults to `(0.9, 0.999)`):
-            Adam's betas parameters (b1, b2).
-        eps (`float`, *optional*, defaults to 1e-06):
-            Adam's epsilon for numerical stability.
-        weight_decay (`float`, *optional*, defaults to 0.0):
-            Decoupled weight decay to apply.
-        correct_bias (`bool`, *optional*, defaults to `True`):
-            Whether or not to correct bias in Adam (for instance, in Bert TF repository they use `False`).
-        no_deprecation_warning (`bool`, *optional*, defaults to `False`):
-            A flag used to disable the deprecation warning (set to `True` to disable the warning).
+    Parameters
+    ----------
+    params : Iterable[nn.parameter.Parameter]
+        Iterable of parameters to optimize or dictionaries defining parameter groups.
+    lr : float, *optional*, defaults to 0.001
+        The learning rate to use.
+    betas (`Tuple[float,float]`, *optional*, defaults to `(0.9, 0.999)`):
+        Adam's betas parameters (b1, b2).
+    eps (`float`, *optional*, defaults to 1e-06):
+        Adam's epsilon for numerical stability.
+    weight_decay (`float`, *optional*, defaults to 0.0):
+        Decoupled weight decay to apply.
+    correct_bias (`bool`, *optional*, defaults to `True`):
+        Whether or not to correct bias in Adam (for instance, in Bert TF repository they use `False`).
     """
 
     def __init__(
@@ -42,16 +38,7 @@ class AdamW(Optimizer):
         eps: float = 1e-6,
         weight_decay: float = 0.0,
         correct_bias: bool = True,
-        no_deprecation_warning: bool = False,
-    ):
-        if not no_deprecation_warning:
-            warnings.warn(
-                "This implementation of AdamW is deprecated and will be removed in a future version. Use the PyTorch"
-                " implementation torch.optim.AdamW instead, or set `no_deprecation_warning=True` to disable this"
-                " warning",
-                FutureWarning,
-            )
-        require_version("torch>=1.5.0")  # add_ with alpha
+        ):
         if lr < 0.0:
             raise ValueError(f"Invalid learning rate: {lr} - should be >= 0.0")
         if not 0.0 <= betas[0] < 1.0:
@@ -62,7 +49,7 @@ class AdamW(Optimizer):
             raise ValueError(f"Invalid epsilon value: {eps} - should be >= 0.0")
         defaults = {"lr": lr, "betas": betas, "eps": eps, "weight_decay": weight_decay, "correct_bias": correct_bias}
         super().__init__(params, defaults)
-
+    
     @torch.no_grad()
     def step(self, closure: Callable = None):
         """
@@ -90,16 +77,7 @@ class AdamW(Optimizer):
                     
                 if 'dim' not in group:
                     group['dim'] = 2
-                # GaLore Projection
-                if "rank" in group:
-                    if "projector" not in state:
-                        if group['dim'] <= 2:
-                            state["projector"] = GaLoreProjector(group["rank"], update_proj_gap=group["update_proj_gap"], scale=group["scale"], proj_type=group["proj_type"])
-                        else:
-                            state["projector"] = GaLoreProjectorTensor(group["rank"], type=group["type"], update_proj_gap=group["update_proj_gap"], scale=group["scale"], proj_type=group["proj_type"])
-                    
-                    grad = state["projector"].project(grad, state["step"])
-
+                
                 # State initialization
                 if "exp_avg" not in state:
                     # Exponential moving average of gradient values
@@ -115,7 +93,11 @@ class AdamW(Optimizer):
                 # Decay the first and second moment running average coefficient
                 # In-place operations to update the averages at the same time
                 exp_avg.mul_(beta1).add_(grad, alpha=(1.0 - beta1))
-                exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1.0 - beta2)
+                
+                if torch.is_complex(grad):
+                    exp_avg_sq.mul_(beta2).addcmul_(grad, grad.conj(), value=1.0 - beta2)
+                else:
+                    exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1.0 - beta2)
                 denom = exp_avg_sq.sqrt().add_(group["eps"])
 
                 step_size = group["lr"]
@@ -126,11 +108,7 @@ class AdamW(Optimizer):
 
                 # compute norm gradient
                 norm_grad = exp_avg / denom
-                
-                # GaLore Projection Back
-                if "rank" in group:
-                    norm_grad = state["projector"].project_back(norm_grad)
-                
+
                 p.add_(norm_grad, alpha=-step_size)
 
                 # Just adding the square of the weights to the loss function is *not*

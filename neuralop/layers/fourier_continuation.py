@@ -39,7 +39,7 @@ class FCLegendre(nn.Module):
             X[:,j] = polynomials[j](fit_grid)
 
         #Compute extension matrix
-        ext_mat = np.matmul(Q, np.linalg.pinv(X, rcond=1e-31))
+        ext_mat = np.matmul(Q, np.linalg.pinv(X, rcond=1e-31), dtype=np.complex64)
         self.register_buffer('ext_mat', torch.from_numpy(ext_mat).to(dtype=self.dtype))
         self.register_buffer('ext_mat_T', self.ext_mat.T.clone())
 
@@ -50,6 +50,7 @@ class FCLegendre(nn.Module):
         left_bnd = x[...,0:self.n]
 
         y = torch.cat((right_bnd, left_bnd), dim=-1)
+        #print(y.dtype, self.ext_mat_T.dtype)
         ext = torch.matmul(y, self.ext_mat_T)
 
         return torch.cat((x, ext), dim=-1)

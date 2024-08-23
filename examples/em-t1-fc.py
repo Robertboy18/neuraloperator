@@ -27,6 +27,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 from neuralop.training import AdamW
+from neuralop.layers.fourier_continuation import FCLegendre
 
 class SHGTimeSeriesDataset(Dataset):
     def __init__(self, input_series, output_series):
@@ -81,7 +82,7 @@ def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False):
     return input_data, output_data
 
 
-def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2):
+def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, fc=True):
     # Split the data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(
         input_data, output_series, test_size=test_size, random_state=42
@@ -91,16 +92,49 @@ def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2):
     train_dataset = SHGTimeSeriesDataset(X_train, y_train)
     test_dataset = SHGTimeSeriesDataset(X_test, y_test)
 
+    
+    if fc:
+        number_additional_points=16
+        n = 3
+        d= number_additional_points
+        fc = FCLegendre(n, d, dtype=torch.complex64)
+        input_series1 = []
+        output_series1 = []
+        input_series2 = []
+        output_series2 = []
+        for samples in train_dataset:
+            input_series, output_series = samples
+            input_series = fc.extend_left_right(input_series)
+            output_series = fc.extend_left_right(output_series)
+            input_series1.append(input_series)
+            output_series1.append(output_series)
+        # convert list to numpy
+        input_series1 = np.array(input_series1)
+        output_series1 = np.array(output_series1)
+        train_dataset = SHGTimeSeriesDataset(input_series1, output_series1)
+        
+        for samples in test_dataset:
+            input_series, output_series = samples
+            input_series = fc.extend_left_right(input_series)
+            output_series = fc.extend_left_right(output_series)
+            input_series2.append(input_series)
+            output_series2.append(output_series)
+        # convert list to numpy
+        input_series2 = np.array(input_series2)
+        output_series2 = np.array(output_series2)
+        test_dataset = SHGTimeSeriesDataset(input_series2, output_series2)        
+        
     # Create DataLoader objects
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
+            
+            
     return train_loader, test_loader
 
 # Usage
 file_path = "/raid/robert/em/SHG_output_final.csv" #"/home/robert/repo/neuraloperator/examples/trial.csv"
 input_data, output_series = load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=True)
-train_loader, test_loader = create_dataloaders(input_data, output_series)
+train_loader, test_loader = create_dataloaders(input_data, output_series, fc=True)
 
 # Print some information about the loaded data
 print(f"Total number of samples: {len(input_data)}")
@@ -122,7 +156,7 @@ device = 'cuda'
 # %%
 # We create a tensorized FNO model
 
-model = FNO(n_modes=(256,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=4, complex_spatial_data=True, domain_padding=None)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
+model = FNO(n_modes=(64,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=4, complex_spatial_data=True, domain_padding=None)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -133,7 +167,7 @@ sys.stdout.flush()
 # %%
 #Create the optimizer
 optimizer = AdamW(model.parameters(), 
-                                lr=8e-3, 
+                                lr=8e-4, 
                                 weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.5)
 
