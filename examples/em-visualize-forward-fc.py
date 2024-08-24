@@ -61,30 +61,31 @@ def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False, u
 
 def predict_and_visualize(model, input_data, actual_output, features, use_fc=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(input_data.shape, actual_output.shape)
     model = model.to(device)
     
     with torch.no_grad():
-        input_tensor = torch.tensor(input_data, dtype=torch.complex64).to(device)
-        if use_fc:
-            number_additional_points=16
-            n = 3
-            d= number_additional_points
-            fc = FCLegendre(n, d, dtype=torch.complex64)
-            input_tensor = fc(torch.tensor(input_data, dtype=torch.complex64))
-            actual_output = fc(torch.tensor(actual_output, dtype=torch.complex64))
-        predicted_output = model(input_tensor).cpu().numpy()
+        input_data = torch.tensor(input_data, dtype=torch.complex64)
+        actual_output = torch.tensor(actual_output, dtype=torch.complex64)
+        number_additional_points=128
+        n = 3
+        d= number_additional_points
+        fc = FCLegendre(n, d, dtype=torch.complex64)
+        input_tensor1 = fc.extend_left_right(input_data)
+        actual_output1 = fc.extend_left_right(actual_output)
+        print(input_tensor1.shape, actual_output1.shape)
+        predicted_output = model(input_tensor1.to(device)).cpu().numpy()
     
     num_samples = input_data.shape[0]
     fig, axs = plt.subplots(num_samples, 2, figsize=(15, 5*num_samples))
     if num_samples == 1:
         axs = [axs]
         
-    actual_output = np.array(actual_output).reshape(num_samples, 1, 2048)
+    actual_output1 = np.array(actual_output1)
+    input_tensor1 = np.array(input_tensor1)
     
-    print(f"Input shape: {input_data.shape}, Output shape: {actual_output.shape}, Predicted shape: {predicted_output.shape}")
+    print(f"Input shape: {input_tensor1.shape}, Output shape: {actual_output1.shape}, Predicted shape: {predicted_output.shape}")
     for i in range(num_samples):
-        axs[i, 1].plot(np.abs(actual_output[i, 0, :])**2, label='Actual')
+        axs[i, 1].plot(np.abs(actual_output1[i, 0, :])**2, label='Actual')
         axs[i, 1].plot(np.abs(predicted_output[i, 0, :])**2, label='Predicted')
         axs[i, 1].set_title(f"Sample {i+1}: Length={features[i,0]:.2f}, Mismatch={features[i,1]:.2f}, Energy={features[i,2]:.2f}")
         axs[i, 1].set_xlabel('Time Step')
@@ -92,7 +93,7 @@ def predict_and_visualize(model, input_data, actual_output, features, use_fc=Fal
         axs[i, 1].legend()
     # now plot the input samples
     for i in range(num_samples):
-        axs[i, 0].plot(np.abs(input_data[i, 3, :])**2)
+        axs[i, 0].plot(np.abs(input_tensor1[i, 3, :])**2)
         axs[i, 0].set_title(f"Input Sample {i+1}: Length={features[i,0]:.2f}, Mismatch={features[i,1]:.2f}, Energy={features[i,2]:.2f}")
         axs[i, 0].set_xlabel('Time Step')
         axs[i, 0].set_ylabel('Magnitude')
@@ -107,7 +108,7 @@ def main():
     data_path = '/raid/robert/em/SHG_output_final.csv'
     
     model = load_pretrained_model(model_path)
-    input_data, actual_output, features = load_and_preprocess_data(data_path, samples=5, use_fft=True)
+    input_data, actual_output, features = load_and_preprocess_data(data_path, samples=7, use_fft=True, use_fc=True)
     
     predict_and_visualize(model, input_data, actual_output, features)
     #predict_and_visualize_complex(model, input_data, actual_output, features)

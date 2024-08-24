@@ -82,7 +82,7 @@ def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False):
     return input_data, output_data
 
 
-def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, fc=True):
+def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, fc=True, use_fft=True):
     # Split the data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(
         input_data, output_series, test_size=test_size, random_state=42
@@ -106,6 +106,11 @@ def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, 
             input_series, output_series = samples
             input_series = fc.extend_left_right(input_series)
             output_series = fc.extend_left_right(output_series)
+            if use_fft:
+                #print(input_series.shape, output_series.shape)
+                input_series[3:, :] = torch.fft.fft(input_series[3:, :], axis=1)
+                #print(input_series.shape, output_series.shape)
+                output_series = torch.fft.fft(output_series, axis=1)
             input_series1.append(input_series)
             output_series1.append(output_series)
         # convert list to numpy
@@ -117,6 +122,9 @@ def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, 
             input_series, output_series = samples
             input_series = fc.extend_left_right(input_series)
             output_series = fc.extend_left_right(output_series)
+            if use_fft:
+                input_series[3:, :] = torch.fft.fft(input_series[3:, :], axis=1)
+                output_series = torch.fft.fft(output_series, axis=1)
             input_series2.append(input_series)
             output_series2.append(output_series)
         # convert list to numpy
@@ -133,8 +141,8 @@ def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, 
 
 # Usage
 file_path = "/raid/robert/em/SHG_output_final.csv" #"/home/robert/repo/neuraloperator/examples/trial.csv"
-input_data, output_series = load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=True)
-train_loader, test_loader = create_dataloaders(input_data, output_series, fc=True)
+input_data, output_series = load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False)
+train_loader, test_loader = create_dataloaders(input_data, output_series, fc=True, use_fft=True)
 
 # Print some information about the loaded data
 print(f"Total number of samples: {len(input_data)}")
@@ -163,11 +171,12 @@ n_params = count_model_params(model)
 print(f'\nOur model has {n_params} parameters.')
 sys.stdout.flush()
 
+model.load_state_dict(torch.load('/raid/robert/em/model.pt'))
 
 # %%
 #Create the optimizer
 optimizer = AdamW(model.parameters(), 
-                                lr=8e-4, 
+                                lr=8e-5, 
                                 weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.5)
 
@@ -195,7 +204,7 @@ sys.stdout.flush()
 callbacks = [BasicLoggerCallback()]    
 
 # %% 
-epochs = 150
+epochs = 100
 # Create the trainer
 trainer = Trainer(model=model, n_epochs=epochs,
                   device=device,
