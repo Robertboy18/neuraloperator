@@ -40,7 +40,15 @@ class SHGTimeSeriesDataset(Dataset):
     def __getitem__(self, idx):
         return self.input_series[idx], self.output_series[idx]
 
-def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False):
+def embed_parameter(value, num_points, d):
+    t = np.linspace(0, 2*np.pi, num_points)
+    embeddings = []
+    for i in range(d):
+        embeddings.append(value * np.sin((i+1)*t))
+        embeddings.append(value * np.cos((i+1)*t))
+    return np.array(embeddings)
+
+def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False, d=3, use_embeddings=False, use_truncation=False, values=None):
     # Load the CSV file
     df = pd.read_csv(file_path)
 
@@ -51,36 +59,52 @@ def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False):
     def to_complex(s):
         return complex(s.strip('()').replace('j', 'j').replace(' ', ''))
 
-    # Extract and convert input time series (Input_0 to Input_2047)
-    input_columns = [f'Input_{i}' for i in range(num)]
+    if use_truncation:
+        input_columns = [f'Input_{i}' for i in values]
+        output_columns = [f'Output_{i}' for i in values]
+    else:
+    # Extract and convert input time series (Input_0 to Input_2047
+        input_columns = [f'Input_{i}' for i in range(num)]
+        output_columns = [f'Output_{i}' for i in range(num)]
     input_series = df[input_columns].map(to_complex).values[:samples]
-
-    # Extract and convert output time series (Output_0 to Output_2047)
-    output_columns = [f'Output_{i}' for i in range(num)]
     output_series = df[output_columns].map(to_complex).values[:samples]
 
-    # Prepare input data with shape (num_samples, 4, num)
-    input_data = np.zeros((samples, 4, num), dtype=np.complex128)
-    
-    # Repeat feature values num times for the first 3 channels
-    for i in range(3):
-        input_data[:, i, :] = np.tile(features[:, i], (num, 1)).T
-    
-    # Add the input series as the 4th channel
-    input_data[:, 3, :] = input_series
+    # Prepare input data with shape (num_samples, d*3 + 1, num)
+    if use_embeddings:
+        input_data = np.zeros((samples, d*3*2 + 1, num), dtype=np.complex128)
+        # Embed and add the constant parameters
+        for i in range(3):
+            embeddings = embed_parameter(features[:, i], samples, d)
+            input_data[:, i*d*2:(i+1)*d*2, :] = embeddings.T[:, :, np.newaxis]
+    else:
+        if use_truncation:
+            input_data = np.zeros((samples, 4, len(values)), dtype=np.complex128)
+            # Add the constant parameters
+            for i in range(3):
+                input_data[:, i, :] = np.tile(features[:, i], (len(values), 1)).T
+        else:
+            input_data = np.zeros((samples, 4, num), dtype=np.complex128)
+            # Add the constant parameters
+            for i in range(3):
+                input_data[:, i, :] = np.tile(features[:, i], (num, 1)).T
+        
+    # Add the input series as the last channel
+    input_data[:, -1, :] = input_series
 
     # Reshape output to (num_samples, 1, num)
-    output_data = output_series.reshape(-1, 1, num)
+    if use_truncation:
+        output_data = output_series.reshape(-1, 1, len(values))
+    else:
+        output_data = output_series.reshape(-1, 1, num)
 
     if use_fft:
-        # Apply FFT to the input series (4th channel of input_data)
-        input_data[:, 3, :] = fft(input_data[:, 3, :], axis=1)
+        # Apply FFT to the input series (last channel of input_data)
+        input_data[:, -1, :] = fft(input_data[:, -1, :], axis=1)
         
         # Apply FFT to the output data
         output_data = fft(output_data, axis=2)
 
     return input_data, output_data
-
 
 def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, fc=True, use_fft=True):
     # Split the data into training and testing sets
@@ -141,8 +165,8 @@ def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, 
 
 # Usage
 file_path = "/raid/robert/em/SHG_output_final.csv" #"/home/robert/repo/neuraloperator/examples/trial.csv"
-input_data, output_series = load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False)
-train_loader, test_loader = create_dataloaders(input_data, output_series, fc=True, use_fft=True)
+input_data, output_series = load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=True, d=6, use_embeddings=False, use_truncation=True, values=[i for i in range(600, 1500)])
+train_loader, test_loader = create_dataloaders(input_data, output_series, fc=False, use_fft=False)
 
 # Print some information about the loaded data
 print(f"Total number of samples: {len(input_data)}")
@@ -171,7 +195,7 @@ n_params = count_model_params(model)
 print(f'\nOur model has {n_params} parameters.')
 sys.stdout.flush()
 
-model.load_state_dict(torch.load('/raid/robert/em/model.pt'))
+#model.load_state_dict(torch.load('/raid/robert/em/model.pt'))
 
 # %%
 #Create the optimizer
@@ -204,7 +228,7 @@ sys.stdout.flush()
 callbacks = [BasicLoggerCallback()]    
 
 # %% 
-epochs = 100
+epochs = 200
 # Create the trainer
 trainer = Trainer(model=model, n_epochs=epochs,
                   device=device,
@@ -225,6 +249,7 @@ trainer.train(train_loader=train_loader,
               scheduler=scheduler, 
               regularizer=False, 
               training_loss=train_loss,
-              eval_losses=eval_losses)
+              eval_losses=eval_losses,
+              use_fft=False)
 
 torch.save(model.state_dict(), f'/raid/robert/em/model.pt')

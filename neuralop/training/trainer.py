@@ -183,7 +183,7 @@ class Trainer:
         
     def train(self, train_loader, test_loaders,
             optimizer, scheduler, regularizer,
-              training_loss=None, eval_losses=None):
+              training_loss=None, eval_losses=None, use_fft=False):
         
         """Trains the given model on the given datasets.
         params:
@@ -214,6 +214,7 @@ class Trainer:
             eval_losses = dict(l2=training_loss)
 
         errors = None
+        self.fc = use_fft   
         """
         with torch.profiler.profile(
             activities=[
@@ -328,7 +329,12 @@ class Trainer:
                                 if self.burgers:
                                     #print(out.shape, y.shape)
                                     if out.dtype == torch.complex64:
-                                        loss = training_loss(torch.view_as_real(out), torch.view_as_real(y)) 
+                                        if self.fc == True:
+                                            out_fft = torch.fft.fft(out, axis=2)
+                                            y_fft = torch.fft.fft(y, axis=2)
+                                            loss = training_loss(torch.view_as_real(out_fft), torch.view_as_real(y_fft))
+                                        else:
+                                            loss = training_loss(torch.view_as_real(out), torch.view_as_real(y)) 
                                     else:
                                         loss = training_loss(out, y)
                                     #training_loss(out.float().squeeze(), **sample)
