@@ -50,7 +50,28 @@ def embed_parameter(value, num_points, d):
 
 def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False, d=3, use_embeddings=False, use_truncation=False, values=None):
     # Load the CSV file
-    df = pd.read_csv(file_path)
+    # Check if file_path is a string (single file) or a list (multiple files)
+    if isinstance(file_path, str):
+        # If it's a string, check if it's a directory or a single file
+        if file_path.endswith('.csv'):
+            file_list = [file_path]
+
+    elif isinstance(file_path, list):
+        # If it's already a list of files, use it as is
+        file_list = file_path
+    else:
+        raise ValueError("file_path must be a string (file path or directory) or a list of file paths")
+
+    # Initialize an empty list to store DataFrames
+    df_list = []
+
+    # Read each CSV file and append to the list
+    for file in file_list:
+        df = pd.read_csv(file)
+        df_list.append(df)
+
+    # Concatenate all DataFrames into a single DataFrame
+    df = pd.concat(df_list, ignore_index=True)
 
     # Extract features (first 3 columns)
     features = df[['Poling Region Length (mm)', 'Poling Period Mismatch (nm)', 'Pump Energy (fJ)']].values[:samples]
@@ -106,7 +127,7 @@ def load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=False, d
 
     return input_data, output_data
 
-def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, fc=True, use_fft=True):
+def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.10, fc=True, use_fft=True):
     # Split the data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(
         input_data, output_series, test_size=test_size, random_state=42
@@ -164,8 +185,8 @@ def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.2, 
     return train_loader, test_loader
 
 # Usage
-file_path = "/raid/robert/em/SHG_output_final.csv" #"/home/robert/repo/neuraloperator/examples/trial.csv"
-input_data, output_series = load_and_preprocess_data(file_path, num=2048, samples=1000, use_fft=True, d=6, use_embeddings=False, use_truncation=True, values=[i for i in range(600, 1500)])
+file_path = ["/raid/robert/em/SHG_output_final.csv", "/raid/robert/SHG_output_final_more_1000.csv"] #"/home/robert/repo/neuraloperator/examples/trial.csv"
+input_data, output_series = load_and_preprocess_data(file_path, num=2048, samples=2000, use_fft=True, d=6, use_embeddings=False, use_truncation=False, values=[i for i in range(600, 1500)])
 train_loader, test_loader = create_dataloaders(input_data, output_series, fc=False, use_fft=False)
 
 # Print some information about the loaded data
@@ -188,7 +209,7 @@ device = 'cuda'
 # %%
 # We create a tensorized FNO model
 
-model = FNO(n_modes=(64,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=4, complex_spatial_data=True, domain_padding=None)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
+model = FNO(n_modes=(256,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=4, complex_spatial_data=True, domain_padding=None)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -200,17 +221,17 @@ sys.stdout.flush()
 # %%
 #Create the optimizer
 optimizer = AdamW(model.parameters(), 
-                                lr=8e-5, 
+                                lr=8e-4, 
                                 weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.5)
 
 
 # %%
 # Creating the losses
-l4loss = LpLoss(d=2, p=2)
-H1Loss1 = H1Loss(d=2)
+l4loss = LpLoss(d=1, p=2, reduce_dims=[0,1], reductions=['sum', 'mean'])
+H1Loss1 = H1Loss(d=1, reduce_dims=[0,1], reductions=['sum', 'mean'])
 
-train_loss = H1Loss1 #H1Loss1 
+train_loss = l4loss #H1Loss1 
 eval_losses= {"H1": H1Loss1, "L2": l4loss}
 
 
@@ -228,7 +249,7 @@ sys.stdout.flush()
 callbacks = [BasicLoggerCallback()]    
 
 # %% 
-epochs = 200
+epochs = 400
 # Create the trainer
 trainer = Trainer(model=model, n_epochs=epochs,
                   device=device,

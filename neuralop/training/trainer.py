@@ -334,7 +334,15 @@ class Trainer:
                                             y_fft = torch.fft.fft(y, axis=2)
                                             loss = training_loss(torch.view_as_real(out_fft), torch.view_as_real(y_fft))
                                         else:
-                                            loss = training_loss(torch.view_as_real(out), torch.view_as_real(y)) 
+                                            #print(out.shape, sample['y'].shape)
+                                            out = out.squeeze()
+                                            out = torch.view_as_real(out)
+                                            out = out.permute(0, 2, 1)
+                                            y = sample['y'].squeeze()
+                                            y = torch.view_as_real(y)
+                                            y = y.permute(0, 2, 1)
+                                            #print(out.shape, y.shape)
+                                            loss = training_loss(out, y) 
                                     else:
                                         loss = training_loss(out, y)
                                     #training_loss(out.float().squeeze(), **sample)
@@ -476,20 +484,23 @@ class Trainer:
                                 else:
                                     val_loss = loss2
                             else:
+                                #print(out.dtype, y.dtype)
                                 if self.burgers:
                                     if out.dtype == torch.complex64:
-                                        val_loss = loss(torch.view_as_real(out), torch.view_as_real(y)) 
-                                    else:
-                                        print("Print example values", out[0, 0, 1000:1010], y[0, 0, 1000:1010])
-                                        val_loss = loss(out, y)#loss(out.squeeze(), **sample)
+                                        out = out.squeeze()
+                                        out = torch.view_as_real(out)
+                                        out = out.permute(0, 2, 1)
+                                        y = sample['y'].squeeze()
+                                        y = torch.view_as_real(y)
+                                        y = y.permute(0, 2, 1)
+                                        val_loss = loss(out, y) 
                                 else:
                                     val_loss = loss(out, **sample)
                         elif isinstance(out, dict):
                             val_loss = loss(out, **sample)
-                        if val_loss.shape == ():
-                            val_loss = val_loss.item()
-
-                    errors[f'{log_prefix}_{loss_name}'] += val_loss
+                        #val_loss = val_loss.item()
+                    #print(val_loss)
+                    errors[f'{log_prefix}_{loss_name}'] += val_loss.item()
 
                 if self.callbacks:
                     self.callbacks.on_val_batch_end()

@@ -282,6 +282,7 @@ class BasicLoggerCallback(Callback):
             if isinstance(loss_value, float):
                 self.state_dict['msg'] += f', {loss_name}={loss_value:.4f}'
             else:
+                #print(errors)
                 loss_value = {i:e.item() for (i, e) in enumerate(loss_value)}
                 self.state_dict['msg'] += f', {loss_name}={loss_value}'
             self.state_dict['values_to_log'][loss_name] = loss_value
