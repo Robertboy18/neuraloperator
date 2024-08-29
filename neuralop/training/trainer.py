@@ -487,13 +487,24 @@ class Trainer:
                                 #print(out.dtype, y.dtype)
                                 if self.burgers:
                                     if out.dtype == torch.complex64:
-                                        out = out.squeeze()
-                                        out = torch.view_as_real(out)
-                                        out = out.permute(0, 2, 1)
-                                        y = sample['y'].squeeze()
-                                        y = torch.view_as_real(y)
-                                        y = y.permute(0, 2, 1)
-                                        val_loss = loss(out, y) 
+                                        if out.shape[0] != 1:
+                                            out = out.squeeze()
+                                            out = torch.view_as_real(out)
+                                            out = out.permute(0, 2, 1)
+                                            y = sample['y'].squeeze()
+                                            y = torch.view_as_real(y)
+                                            y = y.permute(0, 2, 1)
+                                            val_loss = loss(out, y)
+                                        else:
+                                            out = out.squeeze()
+                                            out = torch.view_as_real(out)
+                                            out = out.unsqueeze(0)
+                                            out = out.permute(0, 2, 1)
+                                            y = sample['y'].squeeze()
+                                            y = torch.view_as_real(y)
+                                            y = y.unsqueeze(0)
+                                            y = y.permute(0, 2, 1)
+                                            val_loss = loss(out, y)
                                 else:
                                     val_loss = loss(out, **sample)
                         elif isinstance(out, dict):

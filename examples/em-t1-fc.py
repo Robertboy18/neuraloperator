@@ -14,7 +14,7 @@ import torch
 import matplotlib.pyplot as plt
 import sys
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 from neuralop.models import FNO
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
@@ -186,7 +186,7 @@ def create_dataloaders(input_data, output_series, batch_size=32, test_size=0.10,
 
 # Usage
 file_path = ["/raid/robert/em/SHG_output_final.csv", "/raid/robert/SHG_output_final_more_1000.csv"] #"/home/robert/repo/neuraloperator/examples/trial.csv"
-input_data, output_series = load_and_preprocess_data(file_path, num=2048, samples=2000, use_fft=True, d=6, use_embeddings=False, use_truncation=False, values=[i for i in range(600, 1500)])
+input_data, output_series = load_and_preprocess_data(file_path, num=2048, samples=10, use_fft=True, d=6, use_embeddings=False, use_truncation=False, values=[i for i in range(600, 1500)])
 train_loader, test_loader = create_dataloaders(input_data, output_series, fc=False, use_fft=False)
 
 # Print some information about the loaded data
@@ -209,7 +209,7 @@ device = 'cuda'
 # %%
 # We create a tensorized FNO model
 
-model = FNO(n_modes=(256,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=4, complex_spatial_data=True, domain_padding=None)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
+model = FNO(n_modes=(64,), in_channels=4, out_channels=1, hidden_channels=512, projection_channels=256, n_layers=4, complex_spatial_data=True, domain_padding=None)  #FNO(n_modes=(1024,), in_channels=4, out_channels=1, hidden_channels=512, n_layers=4, complex_spatial_data=True)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -221,7 +221,7 @@ sys.stdout.flush()
 # %%
 #Create the optimizer
 optimizer = AdamW(model.parameters(), 
-                                lr=8e-4, 
+                                lr=8e-3, 
                                 weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.5)
 
@@ -231,7 +231,7 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.5)
 l4loss = LpLoss(d=1, p=2, reduce_dims=[0,1], reductions=['sum', 'mean'])
 H1Loss1 = H1Loss(d=1, reduce_dims=[0,1], reductions=['sum', 'mean'])
 
-train_loss = l4loss #H1Loss1 
+train_loss = H1Loss1 #H1Loss1 
 eval_losses= {"H1": H1Loss1, "L2": l4loss}
 
 
