@@ -245,9 +245,8 @@ class Trainer:
             self.model.train()
             t1 = default_timer()
             train_err = 0.0
-
             for idx, sample in enumerate(train_loader):
-
+                
                 if self.callbacks:
                     self.callbacks.on_batch_start(idx=idx, sample=sample)
 
@@ -343,6 +342,7 @@ class Trainer:
                                             y = y.permute(0, 2, 1)
                                             #print(out.shape, y.shape)
                                             loss = training_loss(out, y) 
+                                            #print("LOSS for training", loss)
                                     else:
                                         loss = training_loss(out, y)
                                     #training_loss(out.float().squeeze(), **sample)
@@ -360,7 +360,7 @@ class Trainer:
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
                 train_err += loss.item()
-        
+
                 with torch.no_grad():
                     avg_loss += loss.item()
                     if regularizer:
@@ -377,7 +377,9 @@ class Trainer:
 
             epoch_train_time = default_timer() - t1            
 
-            train_err /= len(train_loader)
+            #print("Train error", train_err, len(train_loader.dataset))
+            train_err /= len(train_loader.dataset)
+            #print("Train Error Changed", train_err)
             avg_loss  /= self.n_epochs
             
             if epoch % self.log_test_interval == 0: 
@@ -399,8 +401,8 @@ class Trainer:
             if self.callbacks:
                 self.callbacks.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
         #prof.export_memory_timeline(f"burgers_rank_{self.rank}.html", device="cuda:0")
-            if epoch % 20 == 0:
-                torch.save(self.model.state_dict(), f'/raid/robert/em/model_weights/model_{epoch}.pth')
+            #if epoch % 20 == 0:
+            #    torch.save(self.model.state_dict(), f'/raid/robert/em/model_weights/model_{epoch}.pth')
         return errors
 
     def evaluate(self, loss_dict, data_loader,
@@ -458,9 +460,11 @@ class Trainer:
                 batch, res = x.shape[0], x.shape[1]
                 loss1 = 0.
                 loss2 = 0.
+                t2 = default_timer()
 
                 out = self.model(sample['x'])
 
+                #print("Time for evaluation", default_timer() - t2)  
                 if self.data_processor is not None:
                     out, sample = self.data_processor.postprocess(out, sample)
 
@@ -495,6 +499,7 @@ class Trainer:
                                             y = torch.view_as_real(y)
                                             y = y.permute(0, 2, 1)
                                             val_loss = loss(out, y)
+                                            #print("LOSS for testing", val_loss)
                                         else:
                                             out = out.squeeze()
                                             out = torch.view_as_real(out)
@@ -505,12 +510,13 @@ class Trainer:
                                             y = y.unsqueeze(0)
                                             y = y.permute(0, 2, 1)
                                             val_loss = loss(out, y)
+                                            #print("LOSS for testing", val_loss)
                                 else:
                                     val_loss = loss(out, **sample)
                         elif isinstance(out, dict):
                             val_loss = loss(out, **sample)
                         #val_loss = val_loss.item()
-                    #print(val_loss)
+                    #print("val_loss", val_loss) 
                     errors[f'{log_prefix}_{loss_name}'] += val_loss.item()
 
                 if self.callbacks:

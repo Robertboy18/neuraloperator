@@ -14,7 +14,7 @@ import torch
 import matplotlib.pyplot as plt
 import sys
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from neuralop.models import FNO
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
@@ -28,6 +28,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 from neuralop.training import AdamW
 from neuralop.layers.fourier_continuation import FCLegendre
+from neuralop.training.adamw1 import AdamW
 
 class SHGTimeSeriesDataset(Dataset):
     def __init__(self, input_series, output_series):
@@ -208,9 +209,33 @@ sys.stdout.flush()
 
 # %%
 #Create the optimizer
-optimizer = AdamW(model.parameters(), 
-                                lr=4e-4, 
-                                weight_decay=1e-6)
+# create a single galore_adamw for all model params
+galore_params = []
+galore_params.extend(list(model.fno_blocks.convs.parameters()))
+print(galore_params[0].shape, galore_params[1].shape, galore_params[2].shape, galore_params[3].shape)
+# drop the first projection layer
+galore_params.pop(0)
+id_galore_params = [id(p) for p in galore_params]
+# make parameters without "rank" to another group
+regular_params = [p for p in model.parameters() if id(p) not in id_galore_params]
+    
+param_groups = [{'params': regular_params}, 
+                {'params': galore_params, 'type': "tucker", 'rank': 0.25,\
+                'update_proj_gap': 25, 'scale': 0.5, 'proj_type': "std", 'dim': 5}]
+
+param_groups1 = [{'type': "tucker", 'rank': 0.25 , 'update_proj_gap': 50, \
+                'scale': 0.25, 'proj_type': "std", 'dim': 5}]
+# time=3.22, avg_loss=0.4144, train_err=0.2302, test_H1=0.3076, test_L2=0.3076- baseline
+#time=9.15, avg_loss=0.3635, train_err=0.2019, test_H1=0.2696, test_L2=0.2696 - 25%RANK
+# [433] time=3.40, avg_loss=0.4461, train_err=0.2479, test_H1=0.2974, test_L2=0.2974 - 10%RANK
+
+# [499] time=5.89, avg_loss=2.3552, train_err=0.6542, test_H1=0.7075, test_L2=0.7075 - baseline - embeddim=6
+# time=4.12, avg_loss=0.9577, train_err=0.5321, test_H1=0.5697, test_L2=0.5697 - 25% rank - embeddim=6
+optimizer = AdamW(param_groups, lr=4e-3, 
+                activation_checkpoint=False, 
+                matrix_only=False, 
+                first_dim_rollup=1)
+
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.75)
 
 
