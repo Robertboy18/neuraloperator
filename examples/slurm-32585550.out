@@ -1,0 +1,3 @@
+/var/spool/slurmd/job32585550/slurm_script: line 13: Optuna_Training2.py: command not found
+/var/spool/slurmd/job32585550/slurm_script: line 13: Optuna_Training1.py: command not found
+/var/spool/slurmd/job32585550/slurm_script: line 13: Optuna_Training3.py: command not found

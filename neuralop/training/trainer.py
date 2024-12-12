@@ -186,8 +186,8 @@ class Trainer:
 
         if self.verbose:
             print(f'Training on {len(train_loader.dataset)} samples')
-            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
-                  f'         on resolutions {[name for name in test_loaders]}.')
+            #print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
+            #      f'         on resolutions {[name for name in test_loaders]}.')
             sys.stdout.flush()
         
         for epoch in range(self.start_epoch, self.n_epochs):
@@ -294,10 +294,9 @@ class Trainer:
     def evaluate_all(self, epoch, eval_losses, test_loaders):
         # evaluate and gather metrics across each loader in test_loaders
         all_metrics = {}
-        for loader_name, loader in test_loaders.items():
-            loader_metrics = self.evaluate(eval_losses, loader,
-                                    log_prefix=loader_name)   
-            all_metrics.update(**loader_metrics)
+        loader_metrics = self.evaluate(eval_losses, test_loaders,
+                                log_prefix='test')   
+        all_metrics.update(**loader_metrics)
         if self.verbose:
             self.log_eval(epoch=epoch,
                       eval_metrics=all_metrics)
@@ -395,6 +394,12 @@ class Trainer:
             sample = self.data_processor.preprocess(sample)
         else:
             # load data to device if no preprocessor exists
+            x = sample[0]
+            y = sample[1]
+            x = x.to(self.device)
+            y = y.to(self.device)
+            #print(x.shape, y.shape)
+            sample = {'x': x, 'y': y}
             sample = {
                 k: v.to(self.device)
                 for k, v in sample.items()
@@ -455,6 +460,12 @@ class Trainer:
             sample = self.data_processor.preprocess(sample)
         else:
             # load data to device if no preprocessor exists
+            x = sample[0]
+            y = sample[1]
+            x = x.to(self.device)
+            y = y.to(self.device)
+            #print(x.shape, y.shape)
+            sample = {'x': x, 'y': y}
             sample = {
                 k: v.to(self.device)
                 for k, v in sample.items()

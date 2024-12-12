@@ -1,0 +1,3 @@
+module load conda
+conda activate myenv
+CUDA_VISIBLE_DEVICES=0 python train_navier_stokes-high.py --mode=30 --scale=0.25 --rank=0.01 --lr=0.002 & CUDA_VISIBLE_DEVICES=1 python train_navier_stokes-high.py --mode=30 --scale=0.25 --rank=0.05 --lr=0.001 & CUDA_VISIBLE_DEVICES=2 python train_navier_stokes-high.py --mode=30 --scale=0.25 --rank=0.15 --lr=0.002 & CUDA_VISIBLE_DEVICES=3 python train_navier_stokes-high.py --mode=30 --scale=0.5 --rank=0.001 --lr=0.005

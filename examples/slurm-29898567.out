@@ -1,0 +1,13 @@
+/global/u1/r/rgeorge/repo/neuraloperator/examples/data_multi.py:92: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  print('Refractive index at pump = %0.3f' %(n1))
+/global/u1/r/rgeorge/repo/neuraloperator/examples/data_multi.py:93: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  print('Refractive index at signal = %0.3f' %(n2))
+/global/u1/r/rgeorge/repo/neuraloperator/examples/data_multi.py:96: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  print("Poling period for second harmonic generation = %0.4f um" %(pp_shg/um))
+/global/u1/r/rgeorge/repo/neuraloperator/examples/data_multi.py:99: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  print('GVM between %0.1f nm and %0.1f nm = %0.4f fs/mm' %(λ2/nm, λ1/nm, gvm_ps/(fs/mm)) )
+/global/u1/r/rgeorge/repo/neuraloperator/examples/data_multi.py:103: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  print('GVD at %0.1f nm = %0.1f fs^2/mm' %(λ1/nm, gvd_1/(fs**2/mm) ) )
+/global/u1/r/rgeorge/repo/neuraloperator/examples/data_multi.py:104: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  print('GVD at %0.1f nm = %0.1f fs^2/mm' %(λ2/nm, gvd_2/(fs**2/mm) ) )
+slurmstepd: error: *** JOB 29898567 ON nid005249 CANCELLED AT 2024-08-28T19:18:56 ***
