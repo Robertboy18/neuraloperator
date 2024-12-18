@@ -11,7 +11,7 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.padding import DomainPadding
 from neuralop.layers.local_fno_block_complex import LocalFNOBlocksComplex
 from ..layers.channel_mlp import ChannelMLP
-from ..layers.complex import ComplexValued
+from ..layers.complex import ComplexValued, CGELU
 from .base_model import BaseModel
 
 class LocalFNOComplex(BaseModel, name='LocalFNO'):
@@ -308,7 +308,7 @@ class LocalFNOComplex(BaseModel, name='LocalFNO'):
             mix_derivatives=mix_derivatives,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
-            non_linearity=non_linearity,
+            non_linearity=CGELU,
             stabilizer=stabilizer,
             norm=norm,
             preactivation=preactivation,
@@ -341,7 +341,7 @@ class LocalFNOComplex(BaseModel, name='LocalFNO'):
                 hidden_channels=self.lifting_channels,
                 n_layers=2,
                 n_dim=self.n_dim,
-                non_linearity=F.gelu
+                non_linearity=self.non_linearity
             )
         # otherwise, make it a linear layer
         else:
@@ -351,7 +351,7 @@ class LocalFNOComplex(BaseModel, name='LocalFNO'):
                 out_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
-                non_linearity=F.gelu
+                non_linearity=self.non_linearity
             )
         # Convert lifting to a complex ChannelMLP if self.complex_data==True
         if self.complex_data:
@@ -363,7 +363,7 @@ class LocalFNOComplex(BaseModel, name='LocalFNO'):
             hidden_channels=self.projection_channels,
             n_layers=2,
             n_dim=self.n_dim,
-            non_linearity=F.gelu
+            non_linearity=self.non_linearity
         )
         if self.complex_data:
             self.projection = ComplexValued(self.projection)
