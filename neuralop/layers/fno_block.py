@@ -145,6 +145,7 @@ class FNOBlocks(nn.Module):
         self.channel_mlp_skip = channel_mlp_skip
         self.complex_data = complex_data
 
+        self.use_channel_mlp = use_channel_mlp
         self.channel_mlp_expansion = channel_mlp_expansion
         self.channel_mlp_dropout = channel_mlp_dropout
         self.implementation = implementation
