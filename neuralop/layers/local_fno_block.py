@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 import warnings
 
+import math
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -276,11 +277,23 @@ class LocalFNOBlocks(nn.Module):
             ]
         )
 
+        ''' Code for 2D 
         self.local_convs = nn.ModuleList(
             [
                 EquidistantDiscreteContinuousConv2d(self.in_channels, self.out_channels, in_shape=self.default_in_shape, out_shape=self.default_in_shape,
                                                     kernel_shape=self.disco_kernel_shape, domain_length=self.domain_length,
                                                     radius_cutoff=self.radius_cutoff, periodic=self.periodic, groups=self.disco_groups, bias=self.disco_bias)
+                for _ in range(sum(self.disco_layers))
+            ]
+        )
+        '''
+        self.local_convs = nn.ModuleList(
+            [
+                DISCOConv1d(in_channels= self.in_channels,
+                    out_channels= self.out_channels,
+                    base_resolution= self.default_in_shape,
+                    radius_cutoff= self.radius_cutoff,
+                    domain_length = self.domain_length)
                 for _ in range(sum(self.disco_layers))
             ]
         )
@@ -503,3 +516,84 @@ class LocalFNOBlocks(nn.Module):
 
     def __getitem__(self, indices):
         return self.get_block(indices)
+    
+    
+class DISCOConv1d(nn.Conv1d):
+    """
+    Performs 1d DISCO with several choices of bases. The input domain is assumed
+    to be [0,1], and everything is scaled with respect to this.
+
+    Parameters:
+    ------------------------
+    base_resolution : tuple
+        the resolution that the base kernel size is defined with respect to.
+    radius_cutoff : float
+        cutoff radius (with respect to domain_length) for the local integral kernel, by default None,
+        which gives a kernel_size of 3 at the base_resolution
+    domain_length : tuple
+        extent/length of the physical domain. Assumes square domain [-1, 1] by default
+    interpolation_mode : str
+        interpolation mode to use for the kernel, by default 'linear'
+    """
+    def __init__(self,
+                in_channels: int,
+                out_channels: int,
+                base_resolution: tuple,
+                radius_cutoff: float,
+                domain_length = (2,),
+                padding = 'same',
+                groups: int = 1,
+                bias: bool = True,
+                padding_mode: str = 'zeros',
+                interpolation_mode: str = 'linear',
+                device=None,
+                dtype=None,
+                **kwargs):
+
+        # Determining base kernel_size
+        if radius_cutoff:
+            kernel_size = math.floor(2*radius_cutoff * base_resolution[0] / domain_length[0]) + 1
+        else:   # if None, take kernel_size to be 3 at the base resolution
+            kernel_size = 3
+
+        # Stride and dilation are taken to be 1 for now
+        super(DISCOConv1d, self).__init__(in_channels, out_channels, kernel_size, 1,
+            padding, 1, groups, bias, padding_mode, device, dtype)
+        
+        self.base_res = base_resolution
+        self.interpolation_mode = interpolation_mode
+        self.base_padding = padding
+        self.interpolation_mode = interpolation_mode
+
+    def interpolate_kernel(self, scale, weight):
+        if scale == 1.0:
+            return weight, self.base_padding
+
+        # Interpolate the convolutional kernel weights
+        old_shape = weight.shape
+        if isinstance(self.kernel_size, tuple):
+            new_kernel_size = tuple(int(scale * i - scale + 1) for i in self.kernel_size)
+        else:   # it is int
+            new_kernel_size = (int(scale * self.kernel_size - scale + 1),)
+
+        new_kernel = F.interpolate(weight, new_kernel_size, mode=self.interpolation_mode, align_corners=True)
+
+        normalization = new_kernel_size[0] / old_shape[-1]
+        new_kernel /=  normalization                            # normalize by scale
+
+        if isinstance(self.base_padding, tuple):
+            padding = tuple(int(i * scale) for i in self.base_padding)
+        elif isinstance(self.base_padding, str):
+            padding = self.base_padding
+        else:   # it is int
+            padding = int(self.base_padding * scale)
+
+        return new_kernel, padding
+    
+    def forward(self, input):
+        scale = input.shape[-1] / self.base_res[0]
+        assert scale.is_integer() and "Scale must be integer"
+
+        new_kernel, new_padding = self.interpolate_kernel(scale, self.weight)
+        self.padding = new_padding
+        return self._conv_forward(input, new_kernel, self.bias)
