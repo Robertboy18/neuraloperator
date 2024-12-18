@@ -211,8 +211,8 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.75)
 
 # %%
 # Creating the losses
-l4loss = LpLoss(d=1, p=2, reduce_dims=[0,1], reductions=['sum', 'mean'])
-H1Loss1 = H1Loss(d=1, reduce_dims=[0,1], reductions=['sum', 'mean'])
+l4loss = LpLoss(d=1, p=2, reduction='mean')
+H1Loss1 = H1Loss(d=1, reduction='mean')
 
 train_loss = l4loss 
 eval_losses= {"H1": H1Loss1, "L2": l4loss}
@@ -230,7 +230,7 @@ print(f'\n * Test: {eval_losses}')
 sys.stdout.flush()
 
 # %% 
-epochs = 1000
+epochs = 10010
 # Create the trainer
 trainer = Trainer(model=model, n_epochs=epochs,
                   device=device,
