@@ -10,7 +10,6 @@ dependencies = [
     "configmypy",
     "tensorly",
     "tensorly-torch",
-    "torch-harmonics==0.7.3",
     "matplotlib",
     "numpy>=1.25",
     "opt-einsum",
@@ -30,7 +29,10 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["neuralop"]
+include = [
+    "neuralop",
+    "neuralop.*",    
+]
 
 # Dynamic versioning from neuralop.__init__
 [tool.setuptools.dynamic]
@@ -41,6 +43,7 @@ dev = [
     "pytest",
     "flaky",
     "black"
+
 ]
 doc = [
     "matplotlib",
@@ -51,6 +54,7 @@ doc = [
     "sphinx-gallery",
     "tensorly_sphinx_theme",
     "torchtnt",
+    "torch_harmonics==0.7.4"
 ]
 all = [
     "pytest",
@@ -65,4 +69,5 @@ all = [
     "torchtnt",
     "numpy>=1.25",
     "scipy",
+    "torch_harmonics==0.7.4"
 ]

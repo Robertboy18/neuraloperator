@@ -88,6 +88,18 @@ Geometry-Informed Neural Operators (GINO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Local Neural Operators (LocalNO)
+--------------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    LocalNO
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 U-shaped Neural Operators (U-NO)
 ---------------------------------
 
@@ -213,9 +225,9 @@ We also provide additional layers that implement standard deep learning architec
     EquidistantDiscreteContinuousConv2d
     EquidistantDiscreteContinuousConvTranspose2d
 
-**Local FNO Blocks**
+**Local NO Blocks**
 
-.. automodule:: neuralop.layers.local_fno_block
+.. automodule:: neuralop.layers.local_no_block
     :no-members:
     :no-inherited-members:
 
@@ -223,11 +235,11 @@ We also provide additional layers that implement standard deep learning architec
     :toctree: generated
     :template: class.rst
 
-    LocalFNOBlocks
+    LocalNOBlocks
 
 **Codomain Attention (Transformer) Blocks**
 
-.. automodule:: neuralop.layers.coda_blocks
+.. automodule:: neuralop.layers.coda_layer
     :no-members:
     :no-inherited-members:
 
@@ -235,7 +247,7 @@ We also provide additional layers that implement standard deep learning architec
     :toctree: generated
     :template: class.rst
 
-    CODABlocks
+    CODALayer
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

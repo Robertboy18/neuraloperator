@@ -131,13 +131,14 @@ of an equivalent, dense Fourier Neural Operator!
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    install
    user_guide/index
    modules/api
    auto_examples/index
+   dev_guide
 
 
 .. only:: html
